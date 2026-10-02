@@ -76,7 +76,7 @@ ApplicationWindow {
 
     FontMetrics {
         id: writerFontMetrics
-        font.family: "IBM Plex Mono"
+        font.family: backend.editorFont
         font.pixelSize: win.editorFontPixelSize
     }
 
@@ -545,7 +545,7 @@ ApplicationWindow {
                 color: win.textColor
                 selectedTextColor: win.strongTextColor
                 selectionColor: win.selectionFill
-                font.family: "IBM Plex Mono"
+                font.family: backend.editorFont
                 font.pixelSize: win.editorFontPixelSize
                 font.weight: Font.Normal
                 // Native rendering hints glyphs to the pixel grid, which is
@@ -559,6 +559,7 @@ ApplicationWindow {
                     color: win.strongTextColor
                 }
                 onCursorRectangleChanged: editorFlick.ensureCursorVisible()
+                onFontChanged: backend.documentFontChanged()
 
                 function replaceSelectionWith(replacement) {
                     var start = Math.min(selectionStart, selectionEnd);
@@ -821,6 +822,15 @@ ApplicationWindow {
                 onClicked: backend.openDialog()
             }
 
+            FooterIconButton {
+                id: fontButton
+                objectName: "fontButton"
+                iconName: "font"
+                iconColor: win.mutedColor
+                tooltip: "Font"
+                onClicked: fontPicker.opened ? fontPicker.close() : fontPicker.open()
+            }
+
             Label {
                 text: backend.status
                 color: win.mutedColor
@@ -832,6 +842,25 @@ ApplicationWindow {
                 height: win.scaledSize(16)
                 verticalAlignment: Text.AlignVCenter
             }
+        }
+
+        FontPicker {
+            id: fontPicker
+            objectName: "fontPicker"
+            x: footerStatus.x + fontButton.x - 8
+            y: footerStatus.y - height - 10
+            width: win.scaledSize(320)
+            maximumHeight: Math.min(win.scaledSize(440), win.height - 80)
+            fonts: backend.availableFonts
+            currentFont: backend.editorFont
+            defaultFont: "IBM Plex Mono"
+            darkMode: win.darkMode
+            textScale: win.textScale
+            textColor: win.textColor
+            mutedColor: win.mutedColor
+            highlightColor: backend.themeAccent
+            onFontChosen: function(family) { backend.editorFont = family; }
+            onClosed: editor.forceActiveFocus()
         }
 
         Label {
