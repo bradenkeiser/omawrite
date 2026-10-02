@@ -344,6 +344,9 @@ ApplicationWindow {
             anchors.fill: parent
             anchors.leftMargin: 24
             anchors.rightMargin: 24
+            // End above the footer strip so scrolled text never runs under
+            // the footer buttons, status, or word count.
+            anchors.bottomMargin: win.scaledSize(32)
             clip: true
             contentWidth: width
             contentHeight: Math.max(height, editor.y + editor.implicitHeight + 220)
@@ -354,12 +357,6 @@ ApplicationWindow {
                 // flicking the Flickable, so the bar has to be told about
                 // that activity; linger briefly after the last event.
                 active: hovered || pressed || wheelScroll.running || scrollLinger.running
-                // Stop above the footer strip so the bar doesn't overlap
-                // the word count in the bottom-right corner. Padding and
-                // inset, not anchors: the attached-ScrollBar layout overrides
-                // anchors. Padding stops the thumb, the inset the track.
-                bottomPadding: win.scaledSize(32)
-                bottomInset: win.scaledSize(32)
             }
 
             Timer {
