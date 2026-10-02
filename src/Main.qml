@@ -26,6 +26,7 @@ ApplicationWindow {
     // the app at the sizes it was designed around.
     readonly property real textScale: backend.textScale
     readonly property int editorFontPixelSize: scaledSize(20)
+    readonly property int footerHeight: scaledSize(32)
     readonly property int editorWidth: Math.min(
         Math.round(writerFontMetrics.averageCharacterWidth * 65),
         Math.max(360, width - Math.round(writerFontMetrics.averageCharacterWidth * 20)))
@@ -344,9 +345,11 @@ ApplicationWindow {
             anchors.fill: parent
             anchors.leftMargin: 24
             anchors.rightMargin: 24
-            // End above the footer strip so scrolled text never runs under
-            // the footer buttons, status, or word count.
-            anchors.bottomMargin: win.scaledSize(32)
+            // Inset the scrolling area by the footer strip at both ends, so
+            // scrolled text never runs under the footer buttons, status, or
+            // word count, and stops just as far short of the top edge.
+            anchors.topMargin: win.footerHeight
+            anchors.bottomMargin: win.footerHeight
             clip: true
             contentWidth: width
             contentHeight: Math.max(height, editor.y + editor.implicitHeight + 220)
@@ -530,7 +533,9 @@ ApplicationWindow {
                 id: editor
                 objectName: "sourceEditor"
                 x: Math.round((editorFlick.width - width) / 2)
-                y: Math.max(42, Math.round(win.height * 0.05))
+                // The resting position counts from the window's top edge, so
+                // take back the top inset the Flickable already adds.
+                y: Math.max(0, Math.max(42, Math.round(win.height * 0.05)) - win.footerHeight)
                 width: win.editorWidth
                 height: Math.max(editorFlick.height - y - 96, implicitHeight + 20)
                 text: ""
