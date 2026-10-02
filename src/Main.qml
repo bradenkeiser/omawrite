@@ -76,7 +76,7 @@ ApplicationWindow {
 
     FontMetrics {
         id: writerFontMetrics
-        font.family: "iA Writer Mono S"
+        font.family: "IBM Plex Mono"
         font.pixelSize: win.editorFontPixelSize
     }
 
@@ -545,7 +545,7 @@ ApplicationWindow {
                 color: win.textColor
                 selectedTextColor: win.strongTextColor
                 selectionColor: win.selectionFill
-                font.family: "iA Writer Mono S"
+                font.family: "IBM Plex Mono"
                 font.pixelSize: win.editorFontPixelSize
                 font.weight: Font.Normal
                 // Native rendering hints glyphs to the pixel grid, which is
@@ -824,7 +824,7 @@ ApplicationWindow {
             Label {
                 text: backend.status
                 color: win.mutedColor
-                font.family: "iA Writer Mono S"
+                font.family: "IBM Plex Mono"
                 font.pixelSize: win.scaledSize(11)
                 visible: text !== ""
                 elide: Text.ElideRight
@@ -842,7 +842,7 @@ ApplicationWindow {
             text: backend.wordCount + (backend.wordCount === 1 ? " Word" : " Words")
             color: win.mutedColor
             opacity: 0.75
-            font.family: "iA Writer Mono S"
+            font.family: "IBM Plex Mono"
             font.pixelSize: win.scaledSize(11)
         }
 
