@@ -90,7 +90,7 @@ def square_spiral(cx, cy, size, step, turns_in=None):
 
 # --- background: a dimmed mandala bursting out from behind the head ---------
 MX, MY = 512, 430  # centered on the face
-BG_OPACITY = 0.32
+BG_OPACITY = 0.42
 
 
 def petal_ring(radius, count, length, width, color, turn=0.0, sw=4):
@@ -136,13 +136,13 @@ OUT.append('</g>')
 neck = [(300, 690), (724, 690), (724, 1060), (300, 1060)]
 part(neck, outline=26, gap=28)
 # Scales: rows of blocky scallops down each side.
-for row, y in enumerate(range(760, 940, 34)):
+for row, y in enumerate(range(790, 960, 34)):
     offset = 17 if row % 2 else 0
     for x in range(338 + offset, 430, 34):
         both([(x, y), (x, y + 14), (x + 6, y + 22), (x + 22, y + 22), (x + 28, y + 14),
               (x + 28, y)], GREEN, 5)
 # Belly plates.
-for y in range(722, 940, 44):
+for y in range(784, 960, 44):
     box(446, y, 578, y + 32, outline=8, line=4, gap=9)
 
 # --- horns: blocky, ringed ---------------------------------------------------
@@ -161,7 +161,7 @@ face = [(250, 254), (774, 254), (812, 292), (812, 452), (730, 566), (294, 566),
 part(face, outline=26, gap=30)
 
 # --- jaw: narrow, set back behind the muzzle --------------------------------
-part(chamfer(338, 620, 686, 716, 18), outline=20, gap=22)
+part(chamfer(338, 668, 686, 764, 18), outline=20, gap=22)
 
 # --- crown: a double scroll on top of the head -------------------------------
 part(chamfer(388, 132, 636, 270, 22), outline=22, gap=24)
@@ -218,15 +218,15 @@ for x in (440, mx(440)):
     OUT.append(f'<ellipse cx="{x}" cy="{528}" rx="16" ry="8" fill="{RED}"/>')
 
 # --- muzzle: a beefy closed rectangle, wider than the jaw ----------------------
-muzzle = chamfer(244, 552, 780, 664, 20)
+muzzle = chamfer(244, 552, 780, 716, 22)
 part(muzzle, outline=26, gap=30)
-seam = 608
+seam = 634
 line([(276, seam), (748, seam)], RED, 12)
 for x in range(292, 732, 40):  # closed teeth, upper and lower rows
     if x + 28 > 732:
         break
-    line([(x, seam - 8), (x, seam - 24), (x + 28, seam - 24), (x + 28, seam - 8)], GREEN, 5)
-    line([(x + 20, seam + 8), (x + 20, seam + 24), (x + 48, seam + 24), (x + 48, seam + 8)],
+    line([(x, seam - 10), (x, seam - 40), (x + 28, seam - 40), (x + 28, seam - 10)], GREEN, 5)
+    line([(x + 20, seam + 10), (x + 20, seam + 40), (x + 48, seam + 40), (x + 48, seam + 10)],
          GREEN, 5)
 
 print(f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
