@@ -1,138 +1,102 @@
-"""Generates omawrite-icon.svg: a mandala dragon head in profile whose neck is
-the paired stem of a DNA hairpin and whose head is the unpaired loop.
+"""Generates omawrite-icon.svg: a front-facing guardian lion (shishi) face,
+thick and blocky, in a kaleidoscopic red and green burst.
 
     python3 macos/make_icon.py > macos/omawrite-icon.svg
+
+Everything off the center line is drawn once and mirrored, so the face is
+exactly symmetrical.
 """
 
 import math
 
-RED = ["#ff5a4e", "#e8202e", "#a3101f"]      # light, primary, deep
-GREEN = ["#6fe08a", "#14b85a", "#0b6e3a"]
-INK = "#0b1410"
+RED = ["#ff6a5c", "#e8202e", "#9c0e1c"]     # light, primary, deep
+GREEN = ["#7af29b", "#16c060", "#08693a"]
+GOLD = ["#ffe08a", "#ffc23c", "#c98a12"]
+INK = "#0a0f0c"
+CX, CY = 512, 520
+OUT = []
 
 
-def catmull_rom(points, closed=False):
-    """Smooth path through points as cubic Beziers."""
-    pts = points[:]
-    n = len(pts)
-    d = [f"M{pts[0][0]:.1f} {pts[0][1]:.1f}"]
-    count = n if closed else n - 1
-    for i in range(count):
-        p0 = pts[(i - 1) % n] if (closed or i > 0) else pts[0]
-        p1 = pts[i]
-        p2 = pts[(i + 1) % n]
-        p3 = pts[(i + 2) % n] if (closed or i + 2 < n) else pts[-1]
+def fmt(points):
+    return " ".join(f"{x:.1f},{y:.1f}" for x, y in points)
+
+
+def mirror(points):
+    return [(2 * CX - x, y) for x, y in points]
+
+
+def smooth(points, closed=True):
+    """Catmull-Rom spline through points as a cubic Bezier path."""
+    n = len(points)
+    d = [f"M{points[0][0]:.1f} {points[0][1]:.1f}"]
+    for i in range(n if closed else n - 1):
+        p0 = points[(i - 1) % n] if (closed or i) else points[0]
+        p1, p2 = points[i], points[(i + 1) % n]
+        p3 = points[(i + 2) % n] if (closed or i + 2 < n) else points[-1]
         c1 = (p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6)
         c2 = (p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6)
         d.append(f"C{c1[0]:.1f} {c1[1]:.1f} {c2[0]:.1f} {c2[1]:.1f} {p2[0]:.1f} {p2[1]:.1f}")
-    if closed:
-        d.append("Z")
-    return " ".join(d)
+    return " ".join(d) + (" Z" if closed else "")
 
 
-def sample(points, steps=24, closed=False):
-    """Dense polyline along the same Catmull-Rom curve (for beads and rungs)."""
-    out = []
-    n = len(points)
-    count = n if closed else n - 1
-    for i in range(count):
-        p0 = points[(i - 1) % n] if (closed or i > 0) else points[0]
-        p1, p2 = points[i], points[(i + 1) % n]
-        p3 = points[(i + 2) % n] if (closed or i + 2 < n) else points[-1]
-        for s in range(steps):
-            t = s / steps
-            t2, t3 = t * t, t * t * t
-            out.append(tuple(
-                0.5 * ((2 * p1[k]) + (-p0[k] + p2[k]) * t
-                       + (2 * p0[k] - 5 * p1[k] + 4 * p2[k] - p3[k]) * t2
-                       + (-p0[k] + 3 * p1[k] - 3 * p2[k] + p3[k]) * t3)
-                for k in range(2)))
-    if not closed:
-        out.append(points[-1])
-    return out
+def shape(points, fill, sw=10, both=True, closed=True, extra=""):
+    """A smooth filled shape with an ink outline; mirrored unless both=False."""
+    sets = [points, mirror(points)[::-1]] if both else [points]
+    for pts in sets:
+        OUT.append(f'<path d="{smooth(pts, closed)}" fill="{fill}" stroke="{INK}" '
+                   f'stroke-width="{sw}" stroke-linejoin="round" {extra}/>')
 
 
-def resample(poly, count):
-    """`count` points evenly spaced by arc length."""
-    lengths = [0.0]
-    for a, b in zip(poly, poly[1:]):
-        lengths.append(lengths[-1] + math.dist(a, b))
-    total = lengths[-1]
-    out, j = [], 0
-    for i in range(count):
-        target = total * i / (count - 1)
-        while j < len(lengths) - 2 and lengths[j + 1] < target:
-            j += 1
-        seg = lengths[j + 1] - lengths[j] or 1
-        t = (target - lengths[j]) / seg
-        a, b = poly[j], poly[j + 1]
-        out.append((a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t))
-    return out
+def circle(x, y, r, fill, sw=8, both=True, stroke=INK, extra=""):
+    for px in ([x, 2 * CX - x] if both and x != CX else [x]):
+        OUT.append(f'<circle cx="{px:.1f}" cy="{y:.1f}" r="{r:.1f}" fill="{fill}" '
+                   f'stroke="{stroke}" stroke-width="{sw}" {extra}/>')
 
 
-def inside(point, poly):
-    x, y = point
-    hit = False
-    for (x1, y1), (x2, y2) in zip(poly, poly[1:] + poly[:1]):
-        if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
-            hit = not hit
-    return hit
+def star(cx, cy, points, r_out, r_in, rot=0.0):
+    pts = []
+    for i in range(points * 2):
+        r = r_out if i % 2 == 0 else r_in
+        a = math.pi * i / points + rot
+        pts.append((cx + math.cos(a) * r, cy + math.sin(a) * r))
+    return pts
 
 
-def petal(cx, cy, angle, length, width, fill, stroke=INK, sw=4, opacity=1.0):
-    """A pointed leaf from (cx, cy) outward at `angle` degrees."""
-    a = math.radians(angle)
-    ux, uy = math.cos(a), math.sin(a)
-    px, py = -uy, ux
-    tip = (cx + ux * length, cy + uy * length)
-    c1 = (cx + ux * length * 0.35 + px * width, cy + uy * length * 0.35 + py * width)
-    c2 = (cx + ux * length * 0.35 - px * width, cy + uy * length * 0.35 - py * width)
-    return (f'<path d="M{cx:.1f} {cy:.1f} Q{c1[0]:.1f} {c1[1]:.1f} {tip[0]:.1f} {tip[1]:.1f} '
-            f'Q{c2[0]:.1f} {c2[1]:.1f} {cx:.1f} {cy:.1f}Z" fill="{fill}" stroke="{stroke}" '
-            f'stroke-width="{sw}" stroke-linejoin="round" opacity="{opacity}"/>')
+def spiral(cx, cy, r, turns, mirror_x=False):
+    """An Archimedean spiral path, used for mane curls and cheek swirls."""
+    pts = []
+    steps = int(turns * 28)
+    for i in range(steps + 1):
+        t = i / steps
+        a = t * turns * 2 * math.pi
+        rr = r * (1 - t) + 2
+        x = cx + math.cos(a) * rr * (-1 if mirror_x else 1)
+        pts.append((x, cy + math.sin(a) * rr))
+    return "M" + " L".join(f"{x:.1f} {y:.1f}" for x, y in pts)
 
 
-# --- the two strands -------------------------------------------------------
-# Back strand (red): up the back of the neck, over the skull, along the snout.
-back = [(392, 1010), (384, 820), (370, 690), (350, 580), (336, 470), (366, 360),
-        (450, 292), (556, 276), (652, 314), (752, 352), (836, 380), (884, 414), (898, 468)]
-# Front strand (green): up the throat, under the jaw, to the same snout tip.
-front = [(592, 1010), (578, 820), (562, 700), (562, 628), (612, 580), (700, 562),
-         (790, 548), (862, 522), (898, 468)]
+def curl(cx, cy, r, fill, ring, mirror_x=False):
+    circle(cx, cy, r, fill, sw=9, both=False)
+    OUT.append(f'<path d="{spiral(cx, cy, r * 0.78, 2.2, mirror_x)}" fill="none" '
+               f'stroke="{ring}" stroke-width="{r * 0.16:.1f}" stroke-linecap="round"/>')
 
-back_poly = sample(back)
-front_poly = sample(front)
-# The stem is where the strands pair; above it they open into the loop.
-back_split = next(i for i, (_, y) in enumerate(back_poly) if y < 600)
-front_split = next(i for i, (_, y) in enumerate(front_poly) if y < 640)
-head_outline = back_poly[back_split:] + front_poly[front_split:][::-1][1:]
 
-parts = []
-parts.append('''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+# --- background: a kaleidoscope burst -------------------------------------
+OUT.append('''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <radialGradient id="bg" cx="0.55" cy="0.38" r="0.75">
-      <stop offset="0" stop-color="#16261d"/>
-      <stop offset="0.6" stop-color="#0c1511"/>
-      <stop offset="1" stop-color="#050807"/>
+    <radialGradient id="bg" cx="0.5" cy="0.5" r="0.7">
+      <stop offset="0" stop-color="#1f3d2a"/>
+      <stop offset="0.55" stop-color="#0d1c14"/>
+      <stop offset="1" stop-color="#040806"/>
     </radialGradient>
-    <radialGradient id="headfill" cx="0.42" cy="0.45" r="0.7">
-      <stop offset="0" stop-color="#1d3b2a"/>
-      <stop offset="1" stop-color="#0d1a13"/>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffe08a" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffe08a" stop-opacity="0"/>
     </radialGradient>
-    <linearGradient id="redstrand" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="''' + RED[2] + '''"/>
-      <stop offset="0.5" stop-color="''' + RED[1] + '''"/>
-      <stop offset="1" stop-color="''' + RED[0] + '''"/>
-    </linearGradient>
-    <linearGradient id="greenstrand" x1="0" y1="1" x2="1" y2="0">
-      <stop offset="0" stop-color="''' + GREEN[2] + '''"/>
-      <stop offset="0.5" stop-color="''' + GREEN[1] + '''"/>
-      <stop offset="1" stop-color="''' + GREEN[0] + '''"/>
-    </linearGradient>
-    <radialGradient id="iris" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#ffd166"/>
-      <stop offset="0.55" stop-color="''' + GREEN[1] + '''"/>
-      <stop offset="1" stop-color="''' + GREEN[2] + '''"/>
+    <radialGradient id="iris" cx="0.5" cy="0.45" r="0.55">
+      <stop offset="0" stop-color="#ffe08a"/>
+      <stop offset="0.5" stop-color="#ffc23c"/>
+      <stop offset="1" stop-color="#e8202e"/>
     </radialGradient>
     <clipPath id="body">
       <rect x="100" y="100" width="824" height="824" rx="185"/>
@@ -141,129 +105,123 @@ parts.append('''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
   <g clip-path="url(#body)">''')
 
-# Background mandala halo behind the head.
-hx, hy = 540, 430
-for ring, (radius, count, length, width, color, op) in enumerate([
-        (300, 32, 70, 16, GREEN[2], 0.35), (250, 24, 60, 15, RED[2], 0.4)]):
+# Rays alternating red and green, fanned from the center.
+rays = 24
+for i in range(rays):
+    a0 = 2 * math.pi * i / rays
+    a1 = 2 * math.pi * (i + 1) / rays
+    pts = [(CX, CY), (CX + math.cos(a0) * 760, CY + math.sin(a0) * 760),
+           (CX + math.cos(a1) * 760, CY + math.sin(a1) * 760)]
+    color = RED[2] if i % 2 else GREEN[2]
+    OUT.append(f'<polygon points="{fmt(pts)}" fill="{color}" opacity="0.55"/>')
+
+# Nested stars, each turned half a point from the last.
+for k, (r_out, color) in enumerate([(470, GREEN[1]), (420, RED[1]), (372, GOLD[1]),
+                                    (338, GREEN[2]), (310, RED[2])]):
+    pts = star(CX, CY, 16, r_out, r_out * 0.8, rot=k * math.pi / 16)
+    OUT.append(f'<polygon points="{fmt(pts)}" fill="{color}" stroke="{INK}" '
+               f'stroke-width="6" stroke-linejoin="round"/>')
+# A dark halo so the mane reads against the burst.
+OUT.append(f'<circle cx="{CX}" cy="{CY}" r="318" fill="{INK}"/>')
+OUT.append(f'<circle cx="{CX}" cy="{CY}" r="306" fill="none" stroke="{GOLD[1]}" '
+           f'stroke-width="6" stroke-dasharray="1 16" stroke-linecap="round"/>')
+OUT.append(f'<circle cx="{CX}" cy="{CY}" r="300" fill="url(#glow)"/>')
+
+# --- mane: two rings of spiral curls ---------------------------------------
+for ring, (radius, count, size, offset) in enumerate([(262, 18, 50, 0.0), (218, 16, 42, 0.5)]):
     for i in range(count):
-        ang = 360 * i / count + ring * 7.5
-        a = math.radians(ang)
-        sx, sy = hx + math.cos(a) * radius, hy + math.sin(a) * radius
-        if 100 < sx < 924 and 100 < sy < 924:
-            parts.append(petal(sx, sy, ang, length, width, color, stroke="none", opacity=op))
-for r, color, op in [(330, GREEN[1], 0.18), (232, RED[1], 0.22)]:
-    parts.append(f'<circle cx="{hx}" cy="{hy}" r="{r}" fill="none" stroke="{color}" '
-                 f'stroke-width="3" stroke-dasharray="2 14" stroke-linecap="round" opacity="{op}"/>')
+        a = 2 * math.pi * (i + offset) / count - math.pi / 2
+        x, y = CX + math.cos(a) * radius, CY + math.sin(a) * radius * 1.02
+        fill = GREEN[1] if (i + ring) % 2 else RED[1]
+        ringc = GOLD[0] if (i + ring) % 2 else GREEN[0]
+        curl(x, y, size, fill, ringc, mirror_x=x > CX)
 
-# Crest: a fan of petals sweeping back from the skull, alternating strands.
-pivot = (382, 392)
-for i, ang in enumerate(range(150, 262, 14)):
-    length = 230 - abs(ang - 205) * 1.6
-    fill = RED[1] if i % 2 == 0 else GREEN[1]
-    parts.append(petal(*pivot, ang, length, 34, fill, sw=5))
-for i, ang in enumerate(range(157, 255, 14)):
-    length = 150 - abs(ang - 205) * 1.1
-    fill = RED[0] if i % 2 else GREEN[0]
-    parts.append(petal(*pivot, ang, length, 20, fill, sw=4))
+# --- face ------------------------------------------------------------------
+# A broad, blocky head: squarish forehead, wide cheeks, heavy jaw.
+face = [(512, 300), (608, 306), (684, 330), (722, 392), (730, 470), (722, 560),
+        (700, 640), (650, 700), (580, 730), (512, 738)]
+face_full = face + mirror(face)[::-1][1:-1]
+OUT.append(f'<path d="{smooth(face_full)}" fill="{RED[1]}" stroke="{INK}" '
+           f'stroke-width="14" stroke-linejoin="round"/>')
+# Inner face plane, lighter, for a blocky carved look.
+inner = [(512, 340), (590, 346), (650, 372), (676, 430), (672, 520), (640, 600),
+         (590, 650), (512, 668)]
+OUT.append(f'<path d="{smooth(inner + mirror(inner)[::-1][1:-1])}" fill="{RED[0]}" '
+           f'opacity="0.55"/>')
 
-# Two horns sweeping back over the crest.
-for horn, width in [([(492, 296), (440, 214), (350, 166), (250, 156)], 22),
-                    ([(440, 318), (380, 262), (300, 236), (214, 244)], 17)]:
-    d = catmull_rom(horn)
-    parts.append(f'<path d="{d}" fill="none" stroke="{INK}" stroke-width="{width + 14}" '
-                 f'stroke-linecap="round"/>')
-    parts.append(f'<path d="{d}" fill="none" stroke="{RED[0]}" stroke-width="{width}" '
-                 f'stroke-linecap="round"/>')
-    for t in (0.3, 0.55, 0.8):
-        x, y = resample(sample(horn), 21)[int(t * 20)]
-        parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{width * 0.22:.1f}" fill="{GREEN[1]}"/>')
+# Ears: chunky lobes at the top corners.
+shape([(676, 316), (744, 262), (790, 300), (770, 372), (716, 380)], GREEN[1], sw=11)
+shape([(700, 322), (744, 292), (764, 316), (748, 352), (718, 356)], GOLD[1], sw=6)
 
-# Head: the hairpin loop, filled, with a dotted mandala texture inside it.
-parts.append(f'<path d="{catmull_rom(resample(head_outline, 40), closed=True)}" '
-             f'fill="url(#headfill)"/>')
-ex, ey = 580, 404
-for ring in range(1, 12):
-    radius = ring * 30
-    count = max(8, ring * 9)
-    for i in range(count):
-        a = 2 * math.pi * i / count + ring * 0.21
-        p = (ex + math.cos(a) * radius, ey + math.sin(a) * radius)
-        if inside(p, head_outline) and radius > 96:
-            color = RED[0] if ring % 2 else GREEN[0]
-            parts.append(f'<circle cx="{p[0]:.1f}" cy="{p[1]:.1f}" r="{3.2 + (ring % 3)}" '
-                         f'fill="{color}" opacity="0.55"/>')
+# Heavy brows that roll outward into curls.
+shape([(520, 392), (560, 352), (630, 338), (692, 352), (716, 392), (690, 414),
+       (640, 398), (584, 404), (536, 420)], GREEN[1], sw=11)
+for side in (False, True):
+    x = 700 if not side else 2 * CX - 700
+    OUT.append(f'<path d="{spiral(x, 384, 22, 1.6, side)}" fill="none" stroke="{GOLD[0]}" '
+               f'stroke-width="6" stroke-linecap="round"/>')
 
-# Base-pair rungs across the stem: each half takes its strand's color.
-stem_back = resample(back_poly[:back_split + 1], 9)
-stem_front = resample(front_poly[:front_split + 1], 9)
-for (bx, by), (fx, fy) in zip(stem_back[:-1], stem_front[:-1]):
-    mx, my = (bx + fx) / 2, (by + fy) / 2
-    parts.append(f'<line x1="{bx:.1f}" y1="{by:.1f}" x2="{fx:.1f}" y2="{fy:.1f}" '
-                 f'stroke="{INK}" stroke-width="24" stroke-linecap="round"/>')
-    parts.append(f'<line x1="{bx:.1f}" y1="{by:.1f}" x2="{mx - 4:.1f}" y2="{my:.1f}" '
-                 f'stroke="{RED[1]}" stroke-width="14" stroke-linecap="round"/>')
-    parts.append(f'<line x1="{mx + 4:.1f}" y1="{my:.1f}" x2="{fx:.1f}" y2="{fy:.1f}" '
-                 f'stroke="{GREEN[1]}" stroke-width="14" stroke-linecap="round"/>')
+# Third eye: a gem on the forehead.
+gem = [(512, 300), (546, 334), (512, 372), (478, 334)]
+OUT.append(f'<polygon points="{fmt(gem)}" fill="{GREEN[1]}" stroke="{INK}" stroke-width="9" '
+           f'stroke-linejoin="round"/>')
+OUT.append(f'<polygon points="{fmt([(512, 316), (532, 334), (512, 356), (492, 334)])}" '
+           f'fill="{GOLD[1]}"/>')
+circle(512, 334, 7, INK, sw=0)
 
-# The strands themselves, outlined in ink.
-for points, grad in [(back, "redstrand"), (front, "greenstrand")]:
-    d = catmull_rom(points)
-    parts.append(f'<path d="{d}" fill="none" stroke="{INK}" stroke-width="46" '
-                 f'stroke-linecap="round" stroke-linejoin="round"/>')
-    parts.append(f'<path d="{d}" fill="none" stroke="url(#{grad})" stroke-width="30" '
-                 f'stroke-linecap="round" stroke-linejoin="round"/>')
+# Eyes: big, round and bulging, with a level upper lid for a calm gaze.
+EX, EY, ER = 612, 470, 62
+circle(EX, EY, ER + 16, GREEN[1], sw=11)
+circle(EX, EY, ER, "#fff6dc", sw=7)
+circle(EX, EY, ER * 0.72, "url(#iris)", sw=6)
+for r in (ER * 0.55, ER * 0.40):
+    circle(EX, EY, r, "none", sw=3, stroke=RED[2])
+circle(EX, EY, ER * 0.26, INK, sw=0)
+circle(EX - 12, EY - 14, 8, "#ffffff", sw=0)
+# The lid: a flat band across the top of the eye in the face color.
+lid = [(EX - ER - 14, EY - 18), (EX - ER + 4, EY - ER - 4), (EX + ER - 4, EY - ER - 4),
+       (EX + ER + 14, EY - 18)]
+for pts in (lid, mirror(lid)[::-1]):
+    OUT.append(f'<path d="M{pts[0][0]:.1f} {pts[0][1]:.1f} '
+               f'C{pts[1][0]:.1f} {pts[1][1]:.1f} {pts[2][0]:.1f} {pts[2][1]:.1f} '
+               f'{pts[3][0]:.1f} {pts[3][1]:.1f} Z" fill="{RED[1]}" stroke="{INK}" '
+               f'stroke-width="9" stroke-linejoin="round"/>')
+OUT.append(f'<path d="M{EX - ER - 14} {EY - 18} L{EX + ER + 14} {EY - 18}" stroke="{GOLD[1]}" '
+           f'stroke-width="6" stroke-linecap="round"/>')
+OUT.append(f'<path d="M{2 * CX - EX - ER - 14} {EY - 18} L{2 * CX - EX + ER + 14} {EY - 18}" '
+           f'stroke="{GOLD[1]}" stroke-width="6" stroke-linecap="round"/>')
 
-# Unpaired nucleotides: beads along the loop.
-loop_beads = resample(head_outline, 26)[1:-1]
-for i, (x, y) in enumerate(loop_beads):
-    color = RED[0] if i % 2 == 0 else GREEN[0]
-    parts.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="7.5" fill="{color}" '
-                 f'stroke="{INK}" stroke-width="3"/>')
+# Cheeks: puffed rounds with swirls.
+for side in (False, True):
+    x = 656 if not side else 2 * CX - 656
+    circle(x, 588, 50, RED[0], sw=10, both=False)
+    OUT.append(f'<path d="{spiral(x, 588, 36, 2.0, side)}" fill="none" stroke="{RED[2]}" '
+               f'stroke-width="7" stroke-linecap="round"/>')
 
-# Jaw frill: small petals under the jaw.
-for i, ang in enumerate(range(60, 140, 16)):
-    parts.append(petal(650 + i * 30, 572 - i * 5, ang, 66 - i * 6, 14,
-                       GREEN[1] if i % 2 else RED[1], sw=4))
+# Nose: a broad block with flared nostrils.
+nose = [(512, 430), (548, 446), (566, 520), (606, 560), (590, 600), (540, 610), (512, 604)]
+OUT.append(f'<path d="{smooth(nose + mirror(nose)[::-1][1:-1])}" fill="{GREEN[1]}" '
+           f'stroke="{INK}" stroke-width="12" stroke-linejoin="round"/>')
+OUT.append(f'<path d="{smooth([(512, 448), (530, 470), (536, 540), (512, 556), (488, 540), (494, 470)])}" '
+           f'fill="{GREEN[0]}" opacity="0.7"/>')
+circle(560, 578, 18, INK, sw=0)
+circle(560, 578, 8, GREEN[2], sw=0)
 
-# Eye: a mandala rosette with a calm, half-lidded eye.
-for i in range(16):
-    ang = 360 * i / 16
-    parts.append(petal(ex, ey, ang, 92, 20, RED[1] if i % 2 else RED[2], sw=4))
-for i in range(12):
-    ang = 360 * i / 12 + 15
-    parts.append(petal(ex, ey, ang, 70, 18, GREEN[1] if i % 2 else GREEN[0], sw=3.5))
-parts.append(f'<circle cx="{ex}" cy="{ey}" r="50" fill="{INK}"/>')
-parts.append(f'<circle cx="{ex}" cy="{ey}" r="46" fill="none" stroke="{RED[0]}" '
-             f'stroke-width="3" stroke-dasharray="3 7"/>')
-# Almond eye, slightly narrowed by a level upper lid: neutral, not fierce.
-parts.append(f'<path d="M{ex - 40} {ey + 4} Q{ex} {ey - 30} {ex + 42} {ey + 2} '
-             f'Q{ex} {ey + 30} {ex - 40} {ey + 4}Z" fill="url(#iris)" stroke="{INK}" '
-             f'stroke-width="4"/>')
-parts.append(f'<circle cx="{ex + 2}" cy="{ey + 4}" r="12" fill="{INK}"/>')
-parts.append(f'<path d="M{ex - 44} {ey - 6} L{ex + 46} {ey - 8}" stroke="{INK}" '
-             f'stroke-width="9" stroke-linecap="round"/>')
-parts.append(f'<path d="M{ex - 40} {ey - 13} Q{ex} {ey - 20} {ex + 42} {ey - 15}" fill="none" '
-             f'stroke="{RED[0]}" stroke-width="4" stroke-linecap="round"/>')
-parts.append(f'<circle cx="{ex + 12}" cy="{ey - 1}" r="4" fill="#ffffff" opacity="0.9"/>')
+# Mouth: wide and closed, with lips turned in a level line and two small fangs.
+lip = [(512, 640), (560, 632), (620, 644), (650, 668), (612, 690), (512, 694)]
+OUT.append(f'<path d="{smooth(lip + mirror(lip)[::-1][1:-1])}" fill="{RED[2]}" '
+           f'stroke="{INK}" stroke-width="11" stroke-linejoin="round"/>')
+OUT.append(f'<path d="M{CX - 132} 664 Q{CX} 676 {CX + 132} 664" fill="none" '
+           f'stroke="{INK}" stroke-width="9" stroke-linecap="round"/>')
+shape([(572, 664), (590, 664), (582, 700)], "#fff6dc", sw=6)
 
-# Nostril curl and a closed, level mouth line.
-parts.append(f'<path d="M848 404 q14 -12 26 0 q-10 9 -21 4" fill="none" stroke="{INK}" '
-             f'stroke-width="7" stroke-linecap="round"/>')
-parts.append(f'<path d="M884 494 Q800 508 700 516" fill="none" stroke="{INK}" '
-             f'stroke-width="8" stroke-linecap="round"/>')
+# Beard: a block of curls under the chin.
+for i, (dx, dy, r) in enumerate([(0, 772, 40), (-66, 754, 34), (66, 754, 34), (-34, 826, 32),
+                                 (34, 826, 32), (0, 872, 28)]):
+    fill = GREEN[1] if i % 2 else GOLD[1]
+    ring = GOLD[0] if i % 2 else RED[1]
+    curl(CX + dx, dy, r, fill, ring, mirror_x=dx > 0)
 
-# Whiskers: two thin strands trailing from the muzzle, twisting like a helix.
-for phase, color in [(0.0, RED[0]), (math.pi, GREEN[0])]:
-    pts = []
-    for k in range(28):
-        t = k / 27
-        x = 870 - t * 150 + math.sin(t * 2 * math.pi * 1.5 + phase) * 22
-        y = 530 + t * 330
-        pts.append((x, y))
-    d = catmull_rom(pts)
-    parts.append(f'<path d="{d}" fill="none" stroke="{INK}" stroke-width="15" stroke-linecap="round"/>')
-    parts.append(f'<path d="{d}" fill="none" stroke="{color}" stroke-width="7" stroke-linecap="round"/>')
-
-parts.append('</g>')
-parts.append('</svg>')
-print("\n".join(parts))
+OUT.append('</g>')
+OUT.append('</svg>')
+print("\n".join(OUT))
