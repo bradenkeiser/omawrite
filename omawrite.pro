@@ -1,4 +1,4 @@
-QT += core gui widgets printsupport qml quick quickcontrols2 quickdialogs2 dbus
+QT += core gui widgets printsupport qml quick quickcontrols2 quickdialogs2 dbus network
 
 CONFIG += c++17 release
 TARGET = omawrite
@@ -7,12 +7,16 @@ TEMPLATE = app
 HEADERS += \
     src/backend.h \
     src/markdownhighlighter.h \
-    src/systemtheme.h
+    src/router.h \
+    src/systemtheme.h \
+    src/vaults.h
 
 SOURCES += \
     src/main.cpp \
     src/backend.cpp \
     src/markdownhighlighter.cpp \
-    src/systemtheme.cpp
+    src/router.cpp \
+    src/systemtheme.cpp \
+    src/vaults.cpp
 
 RESOURCES += src/resources.qrc

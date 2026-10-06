@@ -11,6 +11,9 @@
 #include <QVariantList>
 #include <memory>
 
+#include "router.h"
+#include "vaults.h"
+
 class MarkdownHighlighter;
 class QTextDocument;
 class QWindow;
@@ -31,6 +34,8 @@ class Backend : public QObject {
     Q_PROPERTY(QString themeSelection READ themeSelection NOTIFY themeColorsChanged)
     Q_PROPERTY(QString editorFont READ editorFont WRITE setEditorFont NOTIFY editorFontChanged)
     Q_PROPERTY(QStringList availableFonts READ availableFonts CONSTANT)
+    Q_PROPERTY(QString destination READ destination NOTIFY destinationChanged)
+    Q_PROPERTY(bool destinationOk READ destinationOk NOTIFY destinationChanged)
 
 public:
     explicit Backend(QObject *parent = nullptr);
@@ -55,6 +60,8 @@ public:
     QString editorFont() const { return m_editorFont; }
     void setEditorFont(const QString &family);
     QStringList availableFonts() const;
+    QString destination() const { return m_destination; }
+    bool destinationOk() const { return m_destinationOk; }
     static QString defaultEditorFont();
     static QStringList selectableFontFamilies(const QStringList &families);
     static int countWords(const QString &text);
@@ -98,6 +105,7 @@ signals:
     void saveDialogRequested(const QUrl &suggestedUrl);
     void saveSucceeded();
     void externalChangeDetected(bool deleted, bool locallyModified);
+    void destinationChanged();
 
 private:
     void loadDocumentText(const QString &text);
@@ -120,6 +128,13 @@ private:
     void watchCurrentFile();
     void loadOmarchyTheme();
     void watchOmarchyTheme();
+    void noteHeaderMaybeChanged(const QString &text);
+    void updateDestination();
+    void setDestination(const QString &destination, bool ok);
+    bool loadFolders(Router::App app, QList<Router::Folder> *folders, QString *error);
+    QString createFolder(Router::App app, const QString &title, const QString &parentId,
+                         QString *error);
+    void saveRouted();
 
     QUrl m_fileUrl;
     bool m_modified = false;
@@ -151,4 +166,15 @@ private:
     QString m_themeSelection;
     QString m_editorFont;
     QFileSystemWatcher m_themeWatcher;
+
+    // Routing to Joplin/Obsidian from a "jop - ..." / "obs - ..." header line.
+    JoplinClient m_joplin;
+    ObsidianVault m_obsidian;
+    QString m_headerLine;
+    QTimer m_destinationTimer;
+    QString m_destination;
+    bool m_destinationOk = true;
+    Router::App m_routedApp = Router::App::None;
+    QString m_routedId;   // Joplin note id once saved
+    QString m_routedPath; // Obsidian file once saved
 };

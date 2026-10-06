@@ -2,6 +2,7 @@
 
 #include <QClipboard>
 #include <QColor>
+#include <QDateTime>
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
@@ -122,6 +123,9 @@ Backend::Backend(QObject *parent) : QObject(parent) {
     m_recoveryTimer.setSingleShot(true);
     m_recoveryTimer.setInterval(750);
     connect(&m_recoveryTimer, &QTimer::timeout, this, &Backend::writeRecovery);
+    m_destinationTimer.setSingleShot(true);
+    m_destinationTimer.setInterval(250);
+    connect(&m_destinationTimer, &QTimer::timeout, this, &Backend::updateDestination);
     connect(&m_fileWatcher, &QFileSystemWatcher::fileChanged, this,
             [this](const QString &path) {
                 if (path != m_fileUrl.toLocalFile())
@@ -248,6 +252,12 @@ void Backend::open(const QUrl &url) {
 }
 
 void Backend::save() {
+    if (Router::parseHeader(currentDocumentText().section(QLatin1Char('\n'), 0, 0)).app
+            != Router::App::None) {
+        saveRouted();
+        return;
+    }
+
     if (!m_fileUrl.isValid() || m_fileUrl.isEmpty()) {
         saveAsDialog();
         return;
@@ -371,6 +381,7 @@ bool Backend::editorTextChanged() {
     if (text == m_lastDocumentText)
         return false;
     m_lastDocumentText = text;
+    noteHeaderMaybeChanged(text);
 
     if (m_document) {
         const int blockCount = m_document->blockCount();
@@ -510,6 +521,10 @@ void Backend::loadDocumentText(const QString &text) {
     m_document->setPlainText(text);
     m_lastDocumentText = text;
     m_loading = false;
+    m_routedApp = Router::App::None;
+    m_routedId.clear();
+    m_routedPath.clear();
+    noteHeaderMaybeChanged(text);
 
     applyDocumentTypography();
     m_wordCountTimer.stop();
@@ -610,7 +625,10 @@ void Backend::writeRecovery() {
     if (!file.open(QIODevice::WriteOnly))
         return;
     const QJsonObject recovery{{QStringLiteral("fileUrl"), m_fileUrl.toString()},
-                               {QStringLiteral("text"), currentDocumentText()}};
+                               {QStringLiteral("text"), currentDocumentText()},
+                               {QStringLiteral("routedApp"), int(m_routedApp)},
+                               {QStringLiteral("routedId"), m_routedId},
+                               {QStringLiteral("routedPath"), m_routedPath}};
     file.write(QJsonDocument(recovery).toJson(QJsonDocument::Compact));
     file.commit();
 }
@@ -624,6 +642,9 @@ void Backend::restoreRecovery() {
         return;
     const QJsonObject recovery = json.object();
     loadDocumentText(recovery.value(QStringLiteral("text")).toString());
+    m_routedApp = Router::App(recovery.value(QStringLiteral("routedApp")).toInt());
+    m_routedId = recovery.value(QStringLiteral("routedId")).toString();
+    m_routedPath = recovery.value(QStringLiteral("routedPath")).toString();
     const QUrl recoveredUrl(recovery.value(QStringLiteral("fileUrl")).toString());
     QFile diskFile(recoveredUrl.toLocalFile());
     if (recoveredUrl.isLocalFile() && diskFile.open(QIODevice::ReadOnly)) {
@@ -841,4 +862,166 @@ void Backend::reapplyTypographyToChange() {
     cursor.mergeBlockFormat(blockFormat);
     cursor.endEditBlock();
     m_formattingTypography = false;
+}
+
+void Backend::noteHeaderMaybeChanged(const QString &text) {
+    const QString line = text.section(QLatin1Char('\n'), 0, 0);
+    if (line == m_headerLine)
+        return;
+    m_headerLine = line;
+    m_destinationTimer.start();
+}
+
+void Backend::setDestination(const QString &destination, bool ok) {
+    if (m_destination == destination && m_destinationOk == ok)
+        return;
+    m_destination = destination;
+    m_destinationOk = ok;
+    emit destinationChanged();
+}
+
+static QHash<QString, QString> routeAliases(Router::App app) {
+    QSettings settings;
+    settings.beginGroup(app == Router::App::Joplin ? QStringLiteral("aliases/joplin")
+                                                   : QStringLiteral("aliases/obsidian"));
+    QHash<QString, QString> aliases;
+    for (const QString &key : settings.childKeys())
+        aliases.insert(key.toLower(), settings.value(key).toString());
+    return aliases;
+}
+
+static QString describeRoute(Router::App app, const Router::Resolution &resolution) {
+    QStringList path{Router::appName(app)};
+    for (const Router::Step &step : resolution.steps)
+        path.append(step.id.isEmpty() ? QStringLiteral("+") + step.title : step.title);
+    return path.join(QStringLiteral(" \u203a "));
+}
+
+bool Backend::loadFolders(Router::App app, QList<Router::Folder> *folders, QString *error) {
+    const bool ok = app == Router::App::Joplin ? m_joplin.folders(folders)
+                                               : m_obsidian.folders(folders);
+    if (!ok)
+        *error = app == Router::App::Joplin ? m_joplin.error() : m_obsidian.error();
+    return ok;
+}
+
+QString Backend::createFolder(Router::App app, const QString &title, const QString &parentId,
+                              QString *error) {
+    const QString id = app == Router::App::Joplin ? m_joplin.createFolder(title, parentId)
+                                                  : m_obsidian.createFolder(title, parentId);
+    if (id.isEmpty())
+        *error = app == Router::App::Joplin ? m_joplin.error() : m_obsidian.error();
+    return id;
+}
+
+void Backend::updateDestination() {
+    const Router::Header header = Router::parseHeader(m_headerLine);
+    if (header.app == Router::App::None) {
+        setDestination(QString(), true);
+        return;
+    }
+
+    QList<Router::Folder> folders;
+    QString error;
+    if (!loadFolders(header.app, &folders, &error)) {
+        setDestination(error, false);
+        return;
+    }
+    const Router::Resolution resolution =
+        Router::resolve(header.parts, folders, routeAliases(header.app));
+    if (!resolution.ok) {
+        setDestination(resolution.error, false);
+        return;
+    }
+    QString destination = QStringLiteral("\u2192 ") + describeRoute(header.app, resolution);
+    if (!header.title.isEmpty())
+        destination += QStringLiteral(" \u203a \"%1\"").arg(header.title);
+    setDestination(destination, true);
+}
+
+void Backend::saveRouted() {
+    const auto fail = [this](const QString &message) {
+        m_closeAfterSave = false;
+        setStatus(QStringLiteral("Not saved: %1").arg(message));
+    };
+
+    const QString text = currentDocumentText();
+    const Router::Header header =
+        Router::parseHeader(text.section(QLatin1Char('\n'), 0, 0));
+    if (header.app == Router::App::Joplin && header.parts.isEmpty())
+        return fail(QStringLiteral("name a Joplin notebook after jop"));
+
+    // Always resolve against a fresh listing so folders made elsewhere count.
+    QList<Router::Folder> folders;
+    QString error;
+    if (!loadFolders(header.app, &folders, &error))
+        return fail(error);
+    const Router::Resolution resolution =
+        Router::resolve(header.parts, folders, routeAliases(header.app));
+    if (!resolution.ok)
+        return fail(resolution.error);
+
+    const QString body = Router::bodyWithoutHeader(text);
+    QString title = Router::noteTitle(header, body);
+    if (title.isEmpty())
+        title = QStringLiteral("Untitled %1")
+                    .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd HHmm")));
+
+    // Only folders written as +name are ever created.
+    QString folderId;
+    for (const Router::Step &step : resolution.steps) {
+        folderId = step.id.isEmpty() ? createFolder(header.app, step.title, folderId, &error)
+                                     : step.id;
+        if (folderId.isEmpty())
+            return fail(error);
+    }
+
+    const Router::App previousApp = m_routedApp;
+    if (header.app == Router::App::Joplin) {
+        if (folderId.isEmpty())
+            return fail(QStringLiteral("name a Joplin notebook after jop"));
+        QString id = previousApp == Router::App::Joplin ? m_routedId : QString();
+        if (!id.isEmpty() && !m_joplin.noteExists(id)) {
+            if (!m_joplin.error().isEmpty())
+                return fail(m_joplin.error());
+            id.clear(); // deleted in Joplin since; save it as a new note
+        }
+        const QString existing = m_joplin.findNote(folderId, title);
+        if (!m_joplin.error().isEmpty())
+            return fail(m_joplin.error());
+        if (!existing.isEmpty() && existing != id)
+            return fail(QStringLiteral("\"%1\" already exists there; change the title").arg(title));
+        if (id.isEmpty())
+            id = m_joplin.createNote(folderId, title, body);
+        else if (!m_joplin.updateNote(id, folderId, title, body))
+            id.clear();
+        if (id.isEmpty())
+            return fail(m_joplin.error());
+        m_routedId = id;
+        m_routedPath.clear();
+    } else {
+        const QString path = m_obsidian.saveNote(
+            folderId, title, body, previousApp == Router::App::Obsidian ? m_routedPath : QString());
+        if (path.isEmpty())
+            return fail(m_obsidian.error());
+        m_routedPath = path;
+        m_routedId.clear();
+    }
+    m_routedApp = header.app;
+
+    QString status = QStringLiteral("Saved to %1 \u203a %2")
+                         .arg(describeRoute(header.app, resolution), title);
+    if (previousApp != Router::App::None && previousApp != header.app)
+        status += QStringLiteral(" (earlier copy left in %1)").arg(Router::appName(previousApp));
+
+    const bool shouldClose = m_closeAfterSave;
+    m_closeAfterSave = false;
+    setModified(false);
+    setStatus(status);
+    clearRecovery();
+    if (resolution.createsFolders())
+        updateDestination();
+    emit saveSucceeded();
+    if (shouldClose)
+        emit closeAfterSave();
 }

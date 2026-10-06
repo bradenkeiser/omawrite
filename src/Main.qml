@@ -834,6 +834,19 @@ ApplicationWindow {
             }
 
             Label {
+                objectName: "destinationLabel"
+                text: backend.destination
+                color: backend.destinationOk ? win.mutedColor : "#d0573f"
+                font.family: "IBM Plex Mono"
+                font.pixelSize: win.scaledSize(11)
+                visible: text !== ""
+                elide: Text.ElideRight
+                width: Math.min(420, win.width / 3)
+                height: win.scaledSize(16)
+                verticalAlignment: Text.AlignVCenter
+            }
+
+            Label {
                 text: backend.status
                 color: win.mutedColor
                 font.family: "IBM Plex Mono"

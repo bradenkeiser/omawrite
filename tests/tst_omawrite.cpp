@@ -7,6 +7,7 @@
 
 #include "backend.h"
 #include "markdownhighlighter.h"
+#include "router.h"
 
 class OmawriteTest : public QObject {
     Q_OBJECT
@@ -123,6 +124,80 @@ private slots:
             states.append(block.userState());
         const int code = MarkdownHighlighter::CodeBlockState;
         QCOMPARE(states, (QList<int>{0, code, code, 0, 0}));
+    }
+
+    static QList<Router::Folder> joplinTree() {
+        // Mirrors the real notebook tree the router was designed against.
+        const auto f = [](const char *id, const char *parent) {
+            const QString path = QString::fromLatin1(id);
+            return Router::Folder{path, path.section(QLatin1Char('/'), -1),
+                                  QString::fromLatin1(parent)};
+        };
+        return {f("homelab", ""), f("homelab/elec_eng", "homelab"),
+                f("homelab/homelab_stuff", "homelab"), f("homelab/truenas", "homelab"),
+                f("homelab/network_monitoring", "homelab"), f("homelab/networking", "homelab"),
+                f("homelab/networking/truenas", "homelab/networking"),
+                f("homelab/reinstall_reconfigure_meshagent", "homelab"),
+                f("homelab/home_assistant", "homelab"), f("homelab/iot", "homelab"),
+                f("musings", ""), f("musings/polished", "musings"),
+                f("musings/scribblings", "musings"), f("cheffing", ""), f("games", ""),
+                f("tunestolearn", ""), f("AWS_IDEA", ""), f("Claude_AWS_IDEA", ""),
+                f("aws", "")};
+    }
+
+    void parsesRoutingHeaders() {
+        Router::Header header = Router::parseHeader(QStringLiteral("jop - hl - eng"));
+        QCOMPARE(header.app, Router::App::Joplin);
+        QCOMPARE(header.parts, (QStringList{QStringLiteral("hl"), QStringLiteral("eng")}));
+        QVERIFY(header.title.isEmpty());
+
+        header = Router::parseHeader(QStringLiteral("obs - aidea - [VPC peering notes]"));
+        QCOMPARE(header.app, Router::App::Obsidian);
+        QCOMPARE(header.parts, QStringList{QStringLiteral("aidea")});
+        QCOMPARE(header.title, QStringLiteral("VPC peering notes"));
+
+        QCOMPARE(Router::parseHeader(QStringLiteral("JOP mus/pol")).parts.size(), 2);
+        QCOMPARE(Router::parseHeader(QStringLiteral("# jop notes")).app, Router::App::None);
+        QCOMPARE(Router::parseHeader(QStringLiteral("jopling along")).app, Router::App::None);
+        QCOMPARE(Router::parseHeader(QStringLiteral("obstacles")).app, Router::App::None);
+
+        QCOMPARE(Router::bodyWithoutHeader(QStringLiteral("jop - mus\n\n# Title\nbody")),
+                 QStringLiteral("# Title\nbody"));
+        QCOMPARE(Router::noteTitle({}, QStringLiteral("text\n## My heading ##\n")),
+                 QStringLiteral("My heading"));
+    }
+
+    void resolvesAbbreviatedFolders() {
+        const auto titles = [](const QString &header) {
+            const Router::Resolution resolution =
+                Router::resolve(Router::parseHeader(header).parts, joplinTree());
+            return resolution.ok ? resolution.titles().join(QLatin1Char('/'))
+                                 : QStringLiteral("ERROR ") + resolution.error;
+        };
+        QCOMPARE(titles(QStringLiteral("jop - hl - eng")), QStringLiteral("homelab/elec_eng"));
+        QCOMPARE(titles(QStringLiteral("jop - mus - pol")), QStringLiteral("musings/polished"));
+        QCOMPARE(titles(QStringLiteral("obs - aidea")), QStringLiteral("AWS_IDEA"));
+        QCOMPARE(titles(QStringLiteral("obs - aws")), QStringLiteral("aws"));
+        QCOMPARE(titles(QStringLiteral("jop - hl - networking - tn")),
+                 QStringLiteral("homelab/networking/truenas"));
+        QVERIFY(titles(QStringLiteral("jop - hl - tn")).startsWith(QStringLiteral("ERROR")));
+        QVERIFY(titles(QStringLiteral("jop - hl - net")).contains(QStringLiteral("type more")));
+        QVERIFY(titles(QStringLiteral("jop - hl - zzz")).contains(QStringLiteral("+zzz")));
+
+        const Router::Resolution created = Router::resolve(
+            {QStringLiteral("hl"), QStringLiteral("+eng2"), QStringLiteral("+deep")}, joplinTree());
+        QVERIFY(created.ok);
+        QVERIFY(created.createsFolders());
+        QVERIFY(created.steps.at(1).id.isEmpty());
+        QVERIFY(!Router::resolve({QStringLiteral("+new"), QStringLiteral("x")}, joplinTree()).ok);
+
+        // An existing folder named with + is reused, not duplicated.
+        QCOMPARE(Router::resolve({QStringLiteral("+musings")}, joplinTree()).steps.at(0).id,
+                 QStringLiteral("musings"));
+
+        const QHash<QString, QString> aliases{{QStringLiteral("songs"), QStringLiteral("tunestolearn")}};
+        QCOMPARE(Router::resolve({QStringLiteral("songs")}, joplinTree(), aliases).titles(),
+                 QStringList{QStringLiteral("tunestolearn")});
     }
 
     void loadsCurrentOmarchyTheme() {
