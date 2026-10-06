@@ -22,6 +22,10 @@ public:
 
     enum class InlineKind { Bold, Italic, Link };
 
+    // Block state for lines inside (or fencing) a ``` / ~~~ code block, where
+    // no markdown is styled or hidden.
+    static constexpr int CodeBlockState = 1;
+
     struct InlineMarkup {
         InlineKind kind;
         Span content;
@@ -38,6 +42,7 @@ protected:
 
 private:
     void rebuildFormats();
+    bool highlightCodeFence(const QString &text);
     void highlightMarkers(const QString &text);
     void highlightInline(const QString &text);
     void highlightSearch(const QString &text);

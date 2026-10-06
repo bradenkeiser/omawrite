@@ -393,7 +393,7 @@ QVariantList Backend::hiddenRangesAt(int position) const {
 
     const QTextBlock block =
         m_document->findBlock(qBound(0, position, m_document->characterCount() - 1));
-    if (!block.isValid())
+    if (!block.isValid() || block.userState() == MarkdownHighlighter::CodeBlockState)
         return ranges;
 
     const int lineStart = block.position();

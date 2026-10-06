@@ -93,6 +93,38 @@ private slots:
         QCOMPARE(markup.at(2).markers[0].length, 1);
     }
 
+    void leavesIntrawordUnderscoresLiteral() {
+        QVERIFY(MarkdownHighlighter::inlineMarkup(QStringLiteral(
+            "sudo cp ./$n-userdata_customizations.sh && dcv_host/userdata_x.sh")).isEmpty());
+        QVERIFY(MarkdownHighlighter::inlineMarkup(QStringLiteral("a_b_c and x__y__z")).isEmpty());
+        QVERIFY(MarkdownHighlighter::inlineMarkup(QStringLiteral("2 * 3 * 4")).isEmpty());
+
+        const auto markup = MarkdownHighlighter::inlineMarkup(
+            QStringLiteral("_italic_ and __bold__ and snake_case"));
+        QCOMPARE(markup.size(), 2);
+        QCOMPARE(markup.at(0).kind, MarkdownHighlighter::InlineKind::Bold);
+        QCOMPARE(markup.at(1).kind, MarkdownHighlighter::InlineKind::Italic);
+        QCOMPARE(markup.at(1).content.start, 1);
+    }
+
+    void ignoresMarkupInsideInlineCode() {
+        QVERIFY(MarkdownHighlighter::inlineMarkup(QStringLiteral("run `*glob* _x_` now")).isEmpty());
+        QCOMPARE(MarkdownHighlighter::inlineMarkup(QStringLiteral("`code` and *em*")).size(), 1);
+    }
+
+    void tracksFencedCodeBlocks() {
+        QTextDocument document;
+        MarkdownHighlighter highlighter(&document);
+        document.setPlainText(QStringLiteral(
+            "intro *em*\n```bash\nmv a_b.sh *x*\n```\nafter *em*"));
+        highlighter.rehighlight();
+        QList<int> states;
+        for (QTextBlock block = document.begin(); block.isValid(); block = block.next())
+            states.append(block.userState());
+        const int code = MarkdownHighlighter::CodeBlockState;
+        QCOMPARE(states, (QList<int>{0, code, code, 0, 0}));
+    }
+
     void loadsCurrentOmarchyTheme() {
         QTemporaryDir homeDirectory;
         QVERIFY(homeDirectory.isValid());

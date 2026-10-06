@@ -111,6 +111,10 @@ void MarkdownHighlighter::rebuildFormats() {
 }
 
 void MarkdownHighlighter::highlightBlock(const QString &text) {
+    if (highlightCodeFence(text)) {
+        highlightSearch(text);
+        return;
+    }
     if (!text.isEmpty()) {
         highlightMarkers(text);
         if (text.contains(QLatin1Char('`')) || text.contains(QLatin1Char('*'))
@@ -135,6 +139,28 @@ void MarkdownHighlighter::highlightSearch(const QString &text) {
         setFormat(from, m_searchQuery.length(), format);
         from += qMax(1, m_searchQuery.length());
     }
+}
+
+bool MarkdownHighlighter::highlightCodeFence(const QString &text) {
+    static const QRegularExpression fenceRe(QStringLiteral("^\\s{0,3}(```|~~~)"));
+    const bool inside = previousBlockState() == CodeBlockState;
+    const bool fence = fenceRe.match(text).hasMatch();
+    if (!inside && !fence) {
+        setCurrentBlockState(0);
+        return false;
+    }
+
+    // An opening fence starts the block and a fence inside it closes it; both
+    // fence lines and everything between them render as plain code.
+    setCurrentBlockState(inside && fence ? 0 : CodeBlockState);
+    if (fence) {
+        QTextCharFormat fenceFormat = m_codeFormat;
+        fenceFormat.setForeground(m_markerFormat.foreground());
+        setFormat(0, text.length(), fenceFormat);
+    } else {
+        setFormat(0, text.length(), m_codeFormat);
+    }
+    return true;
 }
 
 void MarkdownHighlighter::highlightMarkers(const QString &text) {
@@ -217,19 +243,47 @@ QList<MarkdownHighlighter::InlineMarkup> MarkdownHighlighter::inlineMarkup(const
         return Span{int(match.capturedStart(group)), int(match.capturedLength(group))};
     };
 
-    static const QRegularExpression boldRe(QStringLiteral("(\\*\\*|__)(.+?)(\\1)"));
+    // Nothing inside an inline code span is markup.
+    QList<Span> codeSpans;
+    static const QRegularExpression codeRe(QStringLiteral("`[^`]+`"));
+    QRegularExpressionMatchIterator codeMatches = codeRe.globalMatch(text);
+    while (codeMatches.hasNext())
+        codeSpans.append(span(codeMatches.next(), 0));
+    const auto inCode = [&codeSpans](const QRegularExpressionMatch &match) {
+        const int start = int(match.capturedStart(0));
+        const int end = int(match.capturedEnd(0));
+        for (const Span &code : codeSpans) {
+            if (start < code.start + code.length && code.start < end)
+                return true;
+        }
+        return false;
+    };
+
+    // Delimiters must hug their content, and `_` never opens or closes inside
+    // a word (CommonMark), so snake_case and file_names.sh stay literal.
+    static const QRegularExpression boldRe(QStringLiteral(
+        "(?<!\\*)(\\*\\*)(?=\\S)(.+?)(?<=\\S)(\\*\\*)(?!\\*)"
+        "|(?<![\\w_])(__)(?=\\S)(.+?)(?<=\\S)(__)(?![\\w_])"),
+        QRegularExpression::UseUnicodePropertiesOption);
     QRegularExpressionMatchIterator boldMatches = boldRe.globalMatch(text);
     while (boldMatches.hasNext()) {
         const QRegularExpressionMatch match = boldMatches.next();
-        markup.append({InlineKind::Bold, span(match, 2),
-                       {span(match, 1), span(match, 3)}});
+        if (inCode(match))
+            continue;
+        const int g = match.capturedStart(1) >= 0 ? 1 : 4;
+        markup.append({InlineKind::Bold, span(match, g + 1),
+                       {span(match, g), span(match, g + 2)}});
     }
 
-    static const QRegularExpression italicRe(
-        QStringLiteral("(?<!\\*)\\*([^*\\n]+)\\*(?!\\*)|(?<!_)_([^_\\n]+)_(?!_)"));
+    static const QRegularExpression italicRe(QStringLiteral(
+        "(?<!\\*)\\*(?![\\s*])([^*\\n]+?)(?<![\\s*])\\*(?!\\*)"
+        "|(?<![\\w_])_(?![\\s_])([^_\\n]+?)(?<![\\s_])_(?![\\w_])"),
+        QRegularExpression::UseUnicodePropertiesOption);
     QRegularExpressionMatchIterator italicMatches = italicRe.globalMatch(text);
     while (italicMatches.hasNext()) {
         const QRegularExpressionMatch match = italicMatches.next();
+        if (inCode(match))
+            continue;
         const Span whole = span(match, 0);
         const int contentIndex = match.capturedStart(1) >= 0 ? 1 : 2;
         markup.append({InlineKind::Italic, span(match, contentIndex),
@@ -241,6 +295,8 @@ QList<MarkdownHighlighter::InlineMarkup> MarkdownHighlighter::inlineMarkup(const
     QRegularExpressionMatchIterator linkMatches = linkRe.globalMatch(text);
     while (linkMatches.hasNext()) {
         const QRegularExpressionMatch match = linkMatches.next();
+        if (inCode(match))
+            continue;
         const Span whole = span(match, 0);
         const Span content = span(match, 1);
         const int contentEnd = content.start + content.length;
