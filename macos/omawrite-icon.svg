@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2622"/>
+      <stop offset="1" stop-color="#0e0d0c"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.10"/>
+      <stop offset="0.45" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7f2e7"/>
+      <stop offset="1" stop-color="#e9e1d0"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f0a04b"/>
+      <stop offset="1" stop-color="#d4762a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- macOS icon grid: 824px body inset 100px, continuous-corner radius -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#sheen)"/>
+  <rect x="101.5" y="101.5" width="821" height="821" rx="183.5" fill="none"
+        stroke="#ffffff" stroke-opacity="0.07" stroke-width="3"/>
+
+  <!-- the page, slightly tilted, with a soft shadow -->
+  <g transform="rotate(-4 512 520)">
+    <rect x="262" y="236" width="500" height="600" rx="26" fill="#000000" opacity="0.35"
+          transform="translate(10 22)"/>
+    <rect x="262" y="236" width="500" height="600" rx="26" fill="url(#paper)"/>
+
+    <!-- markdown heading mark -->
+    <g stroke="url(#amber)" stroke-width="26" stroke-linecap="round">
+      <path d="M338 318 L322 418"/>
+      <path d="M392 318 L376 418"/>
+      <path d="M310 350 H412"/>
+      <path d="M302 388 H404"/>
+    </g>
+    <path d="M452 368 H676" stroke="#2b2722" stroke-width="30" stroke-linecap="round"/>
+
+    <!-- body lines -->
+    <g stroke="#3a352f" stroke-width="20" stroke-linecap="round" opacity="0.82">
+      <path d="M318 498 H690"/>
+      <path d="M318 556 H650"/>
+      <path d="M318 614 H682"/>
+      <path d="M318 672 H560"/>
+    </g>
+    <!-- writing cursor -->
+    <rect x="584" y="644" width="16" height="58" rx="5" fill="url(#amber)"/>
+    <path d="M318 744 H470" stroke="#3a352f" stroke-width="20" stroke-linecap="round" opacity="0.35"/>
+  </g>
+</svg>

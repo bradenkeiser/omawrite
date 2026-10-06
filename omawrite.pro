@@ -22,3 +22,8 @@ SOURCES += \
     src/vaults.cpp
 
 RESOURCES += src/resources.qrc
+
+macx {
+    ICON = macos/omawrite.icns
+    QMAKE_TARGET_BUNDLE_PREFIX = dev.omacom
+}
