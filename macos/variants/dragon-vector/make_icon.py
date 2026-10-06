@@ -2,7 +2,7 @@
 tones on black. Every part is a thick scarlet outline with a fine neon green
 inner line, black inside, and detailed with guardian-lion patterns: a
 key-fret brow, square-spiral crown scrolls, layered mandala eyes, a closed
-toothed muzzle and a scaled neck, in front of a dimmed mandala burst.
+toothed muzzle and a scaled neck.
 
     python3 macos/make_icon.py > macos/omawrite-icon.svg
 
@@ -87,50 +87,6 @@ def square_spiral(cx, cy, size, step, turns_in=None):
         pts += [(x0, y0)]
     return pts
 
-
-# --- background: a dimmed mandala bursting out from behind the head ---------
-MX, MY = 512, 430  # centered on the face
-BG_OPACITY = 0.32
-
-
-def petal_ring(radius, count, length, width, color, turn=0.0, sw=4):
-    for i in range(count):
-        a = 2 * math.pi * (i + turn) / count
-        ux, uy, px, py = math.cos(a), math.sin(a), -math.sin(a), math.cos(a)
-        base = (MX + ux * radius, MY + uy * radius)
-        tip = (base[0] + ux * length, base[1] + uy * length)
-        l = (base[0] + ux * length * 0.4 + px * width, base[1] + uy * length * 0.4 + py * width)
-        r = (base[0] + ux * length * 0.4 - px * width, base[1] + uy * length * 0.4 - py * width)
-        line([base, l, tip, r], color, sw, closed=True)
-
-
-# A faint scarlet glow behind everything, for the blast.
-OUT.append(f'<circle cx="{MX}" cy="{MY}" r="720" fill="url(#blast)"/>')
-OUT.append(f'<g opacity="{BG_OPACITY}">')
-# The blast: rays fanning out, alternating red and green, long and short.
-for i in range(72):
-    a = 2 * math.pi * i / 72
-    r0, r1 = (150, 760) if i % 2 == 0 else (240, 560)
-    line([(MX + math.cos(a) * r0, MY + math.sin(a) * r0),
-          (MX + math.cos(a) * r1, MY + math.sin(a) * r1)], RED if i % 4 == 0 else GREEN,
-         5 if i % 2 == 0 else 3)
-# Rings of petals, each turned half a petal from the last.
-petal_ring(300, 24, 70, 18, GREEN)
-petal_ring(380, 32, 84, 17, RED, turn=0.5)
-petal_ring(476, 40, 96, 16, GREEN)
-petal_ring(586, 48, 110, 15, RED, turn=0.5)
-# Sixteen-point stars and dotted circles between the petal rings.
-for radius, color, rot in [(270, RED, 0), (362, GREEN, 0.5), (456, RED, 0), (566, GREEN, 0.5)]:
-    pts = []
-    for i in range(32):
-        a = math.pi * (i + rot) / 16
-        rr = radius if i % 2 == 0 else radius * 0.94
-        pts.append((MX + math.cos(a) * rr, MY + math.sin(a) * rr))
-    line(pts, color, 4, closed=True)
-for radius, color in [(250, GREEN), (440, GREEN), (700, RED)]:
-    OUT.append(f'<circle cx="{MX}" cy="{MY}" r="{radius}" fill="none" stroke="{color}" '
-               f'stroke-width="6" stroke-dasharray="2 18" stroke-linecap="round"/>')
-OUT.append('</g>')
 
 # --- neck: wide, vertical, scaled, with belly plates ----------------------
 neck = [(300, 690), (724, 690), (724, 1060), (300, 1060)]
@@ -231,11 +187,6 @@ for x in range(292, 732, 40):  # closed teeth, upper and lower rows
 
 print(f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <radialGradient id="blast" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0.25" stop-color="{RED}" stop-opacity="0.30"/>
-      <stop offset="0.6" stop-color="{RED}" stop-opacity="0.10"/>
-      <stop offset="1" stop-color="{RED}" stop-opacity="0"/>
-    </radialGradient>
     <clipPath id="body"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
   </defs>
   <rect x="100" y="100" width="824" height="824" rx="185" fill="{BLACK}"/>
