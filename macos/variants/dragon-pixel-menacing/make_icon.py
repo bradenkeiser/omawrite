@@ -1,6 +1,5 @@
-"""Generates omawrite-icon.svg: a blocky, stoic temple-terrace dragon head
+"""Generates omawrite-icon.svg: a blocky, menacing temple-terrace dragon head
 (like the glazed heads on Chinese temple verandas), drawn as 32x32 pixel art
-in two tones (scarlet outlines, neon green interiors, black for definition)
 and mirrored down the middle, on a thick vertical neck.
 
     python3 macos/make_icon.py > macos/omawrite-icon.svg
@@ -12,43 +11,52 @@ the right half is its mirror. Earlier designs live in variants/.
 import hashlib
 
 PALETTE = {
-    "R": "#ff2400",  # scarlet: every outline (body, eyes, mouth)
-    "G": "#39ff14",  # neon green: every interior
+    "K": "#141414",  # outline
+    "G": "#1fd25c",  # glazed green
+    "g": "#0c8a3a",  # deep green
+    "L": "#8dffa4",  # green highlight
+    "R": "#ff2b2b",  # red
+    "r": "#a8101c",  # deep red
+    "O": "#ff8a1f",  # orange
+    "Y": "#ffd23c",  # gold
+    "y": "#c9920f",  # deep gold
+    "W": "#fff3d4",  # teeth, eye white
+    "m": "#4f0610",  # mouth
 }
 
 LEFT = [
-    "................",
-    "...RR..........R",
-    "...RGR........RG",
-    "....RGR......RGG",
-    ".....RGR....RGGG",
-    "......RGR..RGGGG",
-    ".......RGRRGGGGG",
-    "......RGGGGGGGGG",
-    "..RR..RGGGGGGGGG",
-    ".RGGRRGGGGGGGGGG",
-    "RGGGGRG.......GG",
-    ".RGGGRG..RRR..GG",
-    "..RRGRG.R.G.R.GG",
-    ".RGGGRG.RGRGR.GG",
-    "RGGGGRG.R.G.R.GG",
-    ".RGGGRG..RRR..GG",
-    "..RRGRG.......GG",
-    ".RGGGRGGGGGGGGGG",
-    "..RRRRRGGGGGGGGG",
-    "......RGGGGGG..G",
-    "......RGGGGGGGGG",
-    "......RRRRRRRRRR",
-    "......RGGGGGGGGG",
-    ".......RGGGGGGGG",
-    "........RGGGGGGG",
-    "........RGG.GGGG",
-    "........RGGGG.GG",
-    "........RG.GGGGG",
-    "........RGGGG.GG",
-    "........RGG.GGGG",
-    "........RGGGG.GG",
-    "........RG.GGGGG",
+    "...KK...........",
+    "..KYYK........KK",
+    "..KYyYK......KRR",
+    "...KYYYK....KROR",
+    "...KKYyYK..KROOO",
+    ".....KYYYKKROOOO",
+    "......KYYKKKKKKK",
+    "..KK..KGGgGGLGGG",
+    ".KRRK.KGgGGgGGLG",
+    "KROORKGKRRRKGgGG",
+    ".KRROKGKRRRRRKGG",
+    "..KRRKKKKKKRRRKG",
+    ".KROOKYYYYYKRRKG",
+    "KROORKOOKKWKKKGG",
+    ".KRROKOOKKOKgGGG",
+    "..KRRKrOOOrKGGgG",
+    ".KROOKKKKKKGKKKK",
+    "KROORKGGGgGKLLLL",
+    ".KRRKGGGGGGKLKKL",
+    "..KKKGgGGGGGKKKK",
+    "...KYYYYYYYYYYYY",
+    "...KWWmWWWmWWmWm",
+    "...KWmmmWWmmmmmm",
+    "...KmmmmmWmmrRRR",
+    "...KWmmmmmmmrRRR",
+    "...KWWmWWmWWmWWm",
+    "...KYYYYYYYYYYYY",
+    "....KKGGgGGGgGGG",
+    "......KGgGGgGYYY",
+    "......KGGgGGgyyy",
+    "......KgGGgGGYYY",
+    "......KGGgGGgYYY",
 ]
 
 assert len(LEFT) == 32 and all(len(row) == 16 for row in LEFT), "LEFT must be 32 rows of 16"
@@ -69,7 +77,7 @@ def noise(col, row):
     mirrored so both halves match."""
     col = min(col, 31 - col)
     digest = hashlib.md5(f"{col},{row}".encode()).digest()[0]
-    return (digest / 255 - 0.5) * 0.08
+    return (digest / 255 - 0.5) * 0.14
 
 
 out = ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" shape-rendering="crispEdges">',
@@ -86,14 +94,12 @@ for row, line in enumerate(ROWS):
         x, y = ORIGIN + col * CELL, ORIGIN + row * CELL
         out.append(f'<rect x="{x:.2f}" y="{y:.2f}" width="{CELL + 0.6:.2f}" height="{CELL + 0.6:.2f}" '
                    f'fill="{shade(base, noise(col, row))}"/>')
-        # Light the top edge and shade the bottom edge of each shape (not of
-        # every block), so flat areas stay flat but the shapes read as blocks.
-        if row == 0 or ROWS[row - 1][col] != key:
+        if key != "K":
+            # A lit top edge and shaded bottom edge give each block some depth.
             out.append(f'<rect x="{x:.2f}" y="{y:.2f}" width="{CELL:.2f}" height="{CELL * 0.16:.2f}" '
-                       f'fill="{shade(base, 0.18)}"/>')
-        if row == 31 or ROWS[row + 1][col] != key:
+                       f'fill="{shade(base, 0.22)}"/>')
             out.append(f'<rect x="{x:.2f}" y="{y + CELL * 0.84:.2f}" width="{CELL:.2f}" '
-                       f'height="{CELL * 0.16:.2f}" fill="{shade(base, -0.28)}"/>')
+                       f'height="{CELL * 0.16:.2f}" fill="{shade(base, -0.25)}"/>')
 out.append('  </g>')
 out.append('</svg>')
 print("\n".join(out))
