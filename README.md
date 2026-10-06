@@ -53,11 +53,12 @@ obs - aidea - [VPC peering notes]    → Obsidian › AWS_IDEA › VPC peering n
 ```
 
 - `jop` or `obs` picks the app; each following part is one folder deeper, separated by `-`, `/` or spaces.
-- `[title]` sets the note title; otherwise the first `# heading` is used, else a timestamp.
+- The last part is the note title when it contains a space or matches no folder (`obs - aidea - vscode implementation`). `[title]` forces it; otherwise the first `# heading` is used, else a timestamp.
 - The header line is stripped from the saved note. Edit the header and save again to move the note.
 - Each part is matched against the folders at that level: an alias, the exact name, a prefix (`mus`), word prefixes (`aidea` → AWS_IDEA), then letters in order (`hl` → homelab). A tie is refused rather than guessed.
 - Folders are only created when written as `+name` (`jop - hl - +eng`).
 - An existing note with the same title is never overwritten.
+- Fenced code blocks are colored by their language (`bash`, `python`, `powershell`, `json`, `yaml`, `sql`, C-like, JS/TS, TOML/INI).
 - The footer shows the resolved destination, or why it can't resolve, as you type the header.
 
 Joplin is reached through its Web Clipper service on `localhost:41184`. The API token is read from `OMAWRITE_JOPLIN_TOKEN`, else the macOS Keychain (`security add-generic-password -a joplin -s omawrite-joplin -w <token>`), else `secret-tool lookup service omawrite-joplin`. The Obsidian vault is the open vault listed in Obsidian's `obsidian.json`, or the `obsidian/vault` setting. Aliases live in the settings file under `[aliases/joplin]` and `[aliases/obsidian]`, e.g. `songs=tunestolearn`.

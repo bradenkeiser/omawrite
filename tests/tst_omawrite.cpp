@@ -8,6 +8,7 @@
 #include "backend.h"
 #include "markdownhighlighter.h"
 #include "router.h"
+#include "codelexer.h"
 
 class OmawriteTest : public QObject {
     Q_OBJECT
@@ -122,8 +123,12 @@ private slots:
         QList<int> states;
         for (QTextBlock block = document.begin(); block.isValid(); block = block.next())
             states.append(block.userState());
-        const int code = MarkdownHighlighter::CodeBlockState;
-        QCOMPARE(states, (QList<int>{0, code, code, 0, 0}));
+        QCOMPARE(states.size(), 5);
+        QCOMPARE(states.at(0), 0);
+        QVERIFY(MarkdownHighlighter::isCodeBlockState(states.at(1)));
+        QCOMPARE(states.at(2), states.at(1));
+        QCOMPARE(states.at(3), 0);
+        QCOMPARE(states.at(4), 0);
     }
 
     static QList<Router::Folder> joplinTree() {
@@ -198,6 +203,51 @@ private slots:
         const QHash<QString, QString> aliases{{QStringLiteral("songs"), QStringLiteral("tunestolearn")}};
         QCOMPARE(Router::resolve({QStringLiteral("songs")}, joplinTree(), aliases).titles(),
                  QStringList{QStringLiteral("tunestolearn")});
+    }
+
+    void takesTrailingPartAsTitle() {
+        const auto route = [](const QString &line) {
+            const Router::Header header = Router::parseHeader(line);
+            const Router::Resolution r =
+                Router::resolve(header.parts, joplinTree(), {}, header.title.isEmpty());
+            return r.ok ? r.titles().join(QLatin1Char('/')) + QStringLiteral(" | ") + r.title
+                        : QStringLiteral("ERROR ") + r.error;
+        };
+        QCOMPARE(route(QStringLiteral("obs - aidea - vscode implementation")),
+                 QStringLiteral("AWS_IDEA | vscode implementation"));
+        QCOMPARE(route(QStringLiteral("jop - mus - pol - Chapter one")),
+                 QStringLiteral("musings/polished | Chapter one"));
+        QCOMPARE(route(QStringLiteral("jop - hl - zzz")), QStringLiteral("homelab | zzz"));
+        QCOMPARE(route(QStringLiteral("jop hl eng")), QStringLiteral("homelab/elec_eng | "));
+        // A bracketed title means every other part must be a folder.
+        QVERIFY(route(QStringLiteral("jop - hl - zzz - [T]")).startsWith(QStringLiteral("ERROR")));
+        // Ambiguity is still refused rather than read as a title.
+        QVERIFY(route(QStringLiteral("jop - hl - net")).startsWith(QStringLiteral("ERROR")));
+    }
+
+    void lexesFencedCodeLanguages() {
+        using namespace CodeLexer;
+        const auto kinds = [](Language language, const QString &line) {
+            QStringList out;
+            for (const Token &token : lex(language, line))
+                out.append(QString::number(int(token.kind)) + QLatin1Char(':')
+                           + line.mid(token.start, token.length));
+            return out.join(QLatin1Char(' '));
+        };
+        QCOMPARE(languageForName(QStringLiteral("bash")), Language::Shell);
+        QCOMPARE(languageForName(QStringLiteral("nope")), Language::Plain);
+        QCOMPARE(kinds(Language::Shell, QStringLiteral("check=\"my_name\" # note")),
+                 QStringLiteral("4:check 1:\"my_name\" 2:# note"));
+        QCOMPARE(kinds(Language::Shell, QStringLiteral("echo $check ${HOME} 42")),
+                 QStringLiteral("0:echo 4:$check 4:${HOME} 3:42"));
+        QCOMPARE(kinds(Language::Shell, QStringLiteral("for n in a_b; do")),
+                 QStringLiteral("0:for 0:in 0:do"));
+        QCOMPARE(kinds(Language::Json, QStringLiteral("{\"a\": true, \"b\": \"x\"}")),
+                 QStringLiteral("5:\"a\" 0:true 5:\"b\" 1:\"x\""));
+        QCOMPARE(kinds(Language::Yaml, QStringLiteral("  name: web # c")),
+                 QStringLiteral("5:name 2:# c"));
+        QCOMPARE(kinds(Language::Python, QStringLiteral("def f(x): return 'a#b'")),
+                 QStringLiteral("0:def 0:return 1:'a#b'"));
     }
 
     void loadsCurrentOmarchyTheme() {

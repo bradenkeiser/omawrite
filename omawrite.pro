@@ -6,6 +6,7 @@ TEMPLATE = app
 
 HEADERS += \
     src/backend.h \
+    src/codelexer.h \
     src/markdownhighlighter.h \
     src/router.h \
     src/systemtheme.h \
@@ -14,6 +15,7 @@ HEADERS += \
 SOURCES += \
     src/main.cpp \
     src/backend.cpp \
+    src/codelexer.cpp \
     src/markdownhighlighter.cpp \
     src/router.cpp \
     src/systemtheme.cpp \

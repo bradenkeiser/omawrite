@@ -14,6 +14,7 @@ enum class App { None, Joplin, Obsidian };
 struct Header {
     App app = App::None;
     QStringList parts; // abbreviated folder path, outermost first; "+name" creates
+                       // (split on - or /, else on spaces when neither is used)
     QString title;     // from a trailing [bracketed title], may be empty
 };
 
@@ -32,6 +33,7 @@ struct Resolution {
     bool ok = false;
     QString error;
     QList<Step> steps;
+    QString title; // a trailing part that was taken as the note title
     bool createsFolders() const;
     QStringList titles() const;
 };
@@ -52,8 +54,9 @@ QString noteTitle(const Header &header, const QString &body);
 int matchTier(const QString &abbreviation, const QString &name);
 
 // Resolves each part against the children of the previous one. Aliases map an
-// abbreviation (lowercase) to an exact folder title.
+// abbreviation (lowercase) to an exact folder title. With `lastMayBeTitle`, a
+// final part containing a space or matching no folder becomes the title.
 Resolution resolve(const QStringList &parts, const QList<Folder> &folders,
-                   const QHash<QString, QString> &aliases = {});
+                   const QHash<QString, QString> &aliases = {}, bool lastMayBeTitle = false);
 
 } // namespace Router

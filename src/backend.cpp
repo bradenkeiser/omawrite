@@ -404,7 +404,7 @@ QVariantList Backend::hiddenRangesAt(int position) const {
 
     const QTextBlock block =
         m_document->findBlock(qBound(0, position, m_document->characterCount() - 1));
-    if (!block.isValid() || block.userState() == MarkdownHighlighter::CodeBlockState)
+    if (!block.isValid() || MarkdownHighlighter::isCodeBlockState(block.userState()))
         return ranges;
 
     const int lineStart = block.position();
@@ -927,42 +927,49 @@ void Backend::updateDestination() {
         setDestination(error, false);
         return;
     }
-    const Router::Resolution resolution =
-        Router::resolve(header.parts, folders, routeAliases(header.app));
+    const Router::Resolution resolution = Router::resolve(
+        header.parts, folders, routeAliases(header.app), header.title.isEmpty());
     if (!resolution.ok) {
         setDestination(resolution.error, false);
         return;
     }
+    if (header.app == Router::App::Joplin && resolution.steps.isEmpty()) {
+        setDestination(QStringLiteral("Name a Joplin notebook after jop"), false);
+        return;
+    }
     QString destination = QStringLiteral("\u2192 ") + describeRoute(header.app, resolution);
-    if (!header.title.isEmpty())
-        destination += QStringLiteral(" \u203a \"%1\"").arg(header.title);
+    const QString title = header.title.isEmpty() ? resolution.title : header.title;
+    if (!title.isEmpty())
+        destination += QStringLiteral(" \u203a \"%1\"").arg(title);
     setDestination(destination, true);
 }
 
 void Backend::saveRouted() {
+    // The footer already shows why a destination doesn't resolve; don't
+    // repeat the same sentence in the status.
     const auto fail = [this](const QString &message) {
         m_closeAfterSave = false;
-        setStatus(QStringLiteral("Not saved: %1").arg(message));
+        setStatus(message == m_destination ? QStringLiteral("Not saved")
+                                           : QStringLiteral("Not saved: %1").arg(message));
     };
 
     const QString text = currentDocumentText();
     const Router::Header header =
         Router::parseHeader(text.section(QLatin1Char('\n'), 0, 0));
-    if (header.app == Router::App::Joplin && header.parts.isEmpty())
-        return fail(QStringLiteral("name a Joplin notebook after jop"));
 
     // Always resolve against a fresh listing so folders made elsewhere count.
     QList<Router::Folder> folders;
     QString error;
     if (!loadFolders(header.app, &folders, &error))
         return fail(error);
-    const Router::Resolution resolution =
-        Router::resolve(header.parts, folders, routeAliases(header.app));
+    const Router::Resolution resolution = Router::resolve(
+        header.parts, folders, routeAliases(header.app), header.title.isEmpty());
     if (!resolution.ok)
         return fail(resolution.error);
 
     const QString body = Router::bodyWithoutHeader(text);
-    QString title = Router::noteTitle(header, body);
+    QString title = resolution.title.isEmpty() ? Router::noteTitle(header, body)
+                                               : resolution.title;
     if (title.isEmpty())
         title = QStringLiteral("Untitled %1")
                     .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyy-MM-dd HHmm")));
@@ -979,7 +986,7 @@ void Backend::saveRouted() {
     const Router::App previousApp = m_routedApp;
     if (header.app == Router::App::Joplin) {
         if (folderId.isEmpty())
-            return fail(QStringLiteral("name a Joplin notebook after jop"));
+            return fail(QStringLiteral("Name a Joplin notebook after jop"));
         QString id = previousApp == Router::App::Joplin ? m_routedId : QString();
         if (!id.isEmpty() && !m_joplin.noteExists(id)) {
             if (!m_joplin.error().isEmpty())

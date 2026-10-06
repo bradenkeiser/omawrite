@@ -4,6 +4,8 @@
 #include <QSyntaxHighlighter>
 #include <QTextCharFormat>
 
+#include "codelexer.h"
+
 class MarkdownHighlighter : public QSyntaxHighlighter {
     Q_OBJECT
 
@@ -22,9 +24,11 @@ public:
 
     enum class InlineKind { Bold, Italic, Link };
 
-    // Block state for lines inside (or fencing) a ``` / ~~~ code block, where
-    // no markdown is styled or hidden.
+    // Block states at or above CodeBlockState mark lines inside (or opening) a
+    // ``` / ~~~ code block, where no markdown is styled or hidden. The offset
+    // from CodeBlockState is the block's CodeLexer::Language.
     static constexpr int CodeBlockState = 1;
+    static bool isCodeBlockState(int state) { return state >= CodeBlockState; }
 
     struct InlineMarkup {
         InlineKind kind;
@@ -57,6 +61,7 @@ private:
     QTextCharFormat m_boldFormat;
     QTextCharFormat m_italicFormat;
     QTextCharFormat m_codeFormat;
+    QTextCharFormat m_codeTokenFormats[6]; // indexed by CodeLexer::Kind
     QTextCharFormat m_quoteFormat;
     QTextCharFormat m_linkFormat;
     QString m_searchQuery;

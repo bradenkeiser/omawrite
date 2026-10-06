@@ -84,8 +84,13 @@ Header parseHeader(const QString &firstLine) {
         rest = rest.left(title.capturedStart(0));
     }
 
-    static const QRegularExpression separatorRe(QStringLiteral("[\\s/-]+"));
-    header.parts = rest.split(separatorRe, Qt::SkipEmptyParts);
+    static const QRegularExpression separatorRe(QStringLiteral("\\s*[-/]\\s*"));
+    static const QRegularExpression spaceRe(QStringLiteral("\\s+"));
+    const bool separated = rest.contains(QLatin1Char('-')) || rest.contains(QLatin1Char('/'));
+    for (const QString &part : rest.split(separated ? separatorRe : spaceRe, Qt::SkipEmptyParts)) {
+        if (!part.trimmed().isEmpty())
+            header.parts.append(part.trimmed());
+    }
     return header;
 }
 
@@ -129,13 +134,21 @@ int matchTier(const QString &abbreviation, const QString &name) {
 }
 
 Resolution resolve(const QStringList &parts, const QList<Folder> &folders,
-                   const QHash<QString, QString> &aliases) {
+                   const QHash<QString, QString> &aliases, bool lastMayBeTitle) {
     Resolution resolution;
     QString parentId;
     bool creating = false;
     QString where = QStringLiteral("the top level");
 
-    for (const QString &part : parts) {
+    for (int index = 0; index < parts.size(); ++index) {
+        const QString &part = parts.at(index);
+        const bool titleCandidate = lastMayBeTitle && index == parts.size() - 1
+            && !part.startsWith(QLatin1Char('+'));
+        if (titleCandidate && part.contains(QLatin1Char(' '))) {
+            resolution.title = part;
+            break;
+        }
+
         QList<Folder> children;
         if (!creating) {
             for (const Folder &folder : folders) {
@@ -184,6 +197,10 @@ Resolution resolve(const QStringList &parts, const QList<Folder> &folders,
             }
         }
 
+        if (best.isEmpty() && titleCandidate) {
+            resolution.title = part;
+            break;
+        }
         if (best.isEmpty()) {
             resolution.error = QStringLiteral("Nothing matches '%1' in %2 (write +%1 to create it)")
                                    .arg(part, where);

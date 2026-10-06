@@ -94,6 +94,17 @@ void MarkdownHighlighter::rebuildFormats() {
     m_codeFormat.setForeground(text);
     m_codeFormat.setBackground(codeBackground);
 
+    // Code token colors, one per CodeLexer::Kind, tuned for each mode.
+    const char *const darkTokens[] = {"#c792ea", "#c3e88d", "#7f848e", "#f78c6c", "#82aaff", "#ffcb6b"};
+    const char *const lightTokens[] = {"#7c3aed", "#2f7d32", "#8a8f98", "#c2410c", "#1d4ed8", "#9a6700"};
+    for (int kind = 0; kind < 6; ++kind) {
+        QTextCharFormat format = m_codeFormat;
+        format.setForeground(QColor(QLatin1String(m_darkMode ? darkTokens[kind] : lightTokens[kind])));
+        if (CodeLexer::Kind(kind) == CodeLexer::Kind::Comment)
+            format.setFontItalic(true);
+        m_codeTokenFormats[kind] = format;
+    }
+
     m_quoteFormat = QTextCharFormat();
     m_quoteFormat.setForeground(quote);
     m_quoteFormat.setFontItalic(true);
@@ -142,24 +153,31 @@ void MarkdownHighlighter::highlightSearch(const QString &text) {
 }
 
 bool MarkdownHighlighter::highlightCodeFence(const QString &text) {
-    static const QRegularExpression fenceRe(QStringLiteral("^\\s{0,3}(```|~~~)"));
-    const bool inside = previousBlockState() == CodeBlockState;
-    const bool fence = fenceRe.match(text).hasMatch();
-    if (!inside && !fence) {
+    static const QRegularExpression fenceRe(QStringLiteral("^\\s{0,3}(?:```|~~~)\\s*([^\\s`]*)"));
+    const int previous = previousBlockState();
+    const bool inside = isCodeBlockState(previous);
+    const QRegularExpressionMatch fence = fenceRe.match(text);
+    if (!inside && !fence.hasMatch()) {
         setCurrentBlockState(0);
         return false;
     }
 
-    // An opening fence starts the block and a fence inside it closes it; both
-    // fence lines and everything between them render as plain code.
-    setCurrentBlockState(inside && fence ? 0 : CodeBlockState);
-    if (fence) {
+    // An opening fence starts the block (its info string picks the language)
+    // and a fence inside it closes it.
+    if (fence.hasMatch()) {
+        setCurrentBlockState(inside ? 0
+            : CodeBlockState + int(CodeLexer::languageForName(fence.captured(1))));
         QTextCharFormat fenceFormat = m_codeFormat;
         fenceFormat.setForeground(m_markerFormat.foreground());
         setFormat(0, text.length(), fenceFormat);
-    } else {
-        setFormat(0, text.length(), m_codeFormat);
+        return true;
     }
+
+    setCurrentBlockState(previous);
+    setFormat(0, text.length(), m_codeFormat);
+    const auto language = CodeLexer::Language(previous - CodeBlockState);
+    for (const CodeLexer::Token &token : CodeLexer::lex(language, text))
+        setFormat(token.start, token.length, m_codeTokenFormats[int(token.kind)]);
     return true;
 }
 

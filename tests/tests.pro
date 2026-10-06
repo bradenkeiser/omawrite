@@ -7,11 +7,13 @@ INCLUDEPATH += ../src
 SOURCES += \
     tst_omawrite.cpp \
     ../src/backend.cpp \
+    ../src/codelexer.cpp \
     ../src/markdownhighlighter.cpp \
     ../src/router.cpp \
     ../src/vaults.cpp
 HEADERS += \
     ../src/backend.h \
+    ../src/codelexer.h \
     ../src/markdownhighlighter.h \
     ../src/router.h \
     ../src/vaults.h
