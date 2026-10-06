@@ -103,54 +103,51 @@ def curl(x0, y0, size, stroke=1, gap=1, outline=2, separate=1):
     spiral(x0 + inset, y0 + inset, size - 2 * inset, stroke, gap)
 
 
-def mandala_eye(cx, cy, rings="RRG.RG.GR"):
-    """Nested diamond rings, frameless, cut into black: a blank, staring
-    mandala. `rings` gives the color of each ring from the center out."""
-    r = len(rings) - 1
-    for y in range(cy - r - 1, cy + r + 2):
-        for x in range(cx - r - 1, cx + r + 2):
-            m = abs(x - cx) + abs(y - cy)
-            if m <= r + 1 and 0 <= x < HALF:
-                grid[y][x] = rings[m] if m <= r else "."
+def mandala_eye(cx, cy, r=6):
+    """Square outline around nested diamonds: a blank, staring mandala."""
+    paint(rect(cx - r, cy - r, cx + r, cy + r), outline=2, band=0)
+    rings = {0: "R", 1: "R", 2: "G", 3: ".", 4: "R", 5: "G", 6: "."}
+    for y in range(cy - r + 2, cy + r - 1):
+        for x in range(cx - r + 2, cx + r - 1):
+            grid[y][x] = rings.get(abs(x - cx) + abs(y - cy), ".")
 
 
 # Neck: wide, thick-walled and strictly vertical, with belly plates.
-paint(rect(12, 45, 31, N - 1), outline=4)
-for y in range(53, N, 5):
+paint(rect(12, 42, 31, N - 1), outline=4)
+for y in range(50, N, 5):
     paint(rect(21, y, 31, y + 3), outline=1, band=1, gap=1)
 
 # Horns rising from the crown.
-paint(polygon([(8, 1), (14, 1), (17, 13), (11, 13)]), outline=3, band=1)
+paint(polygon([(9, 1), (16, 1), (20, 14), (13, 14)]), outline=3, band=1)
 
-# Head: very broad and short, so the features crowd together.
-paint(polygon([(32, 11), (7, 11), (4, 15), (4, 35), (7, 42), (13, 47), (32, 47)]), outline=4)
+# Head: broad and short, so the features crowd together.
+paint(polygon([(32, 11), (11, 11), (8, 15), (8, 33), (11, 39), (16, 43), (32, 43)]), outline=4)
 
 # Crown curl across the top of the head; it meets its mirror in the middle
 # as a double scroll.
-curl(18, 1, 14, outline=3)
+curl(18, 2, 14, outline=3)
 
-# Brow: a level green ridge pressed down onto the eyes.
-for x in range(8, HALF):
-    grid[16][x] = "G"
-    grid[17][x] = "G"
+# Brow: a band of curls pressed down onto the eyes.
+for x in (12, 19, 26):
+    curl(x, 16, 7, outline=1, separate=0)
 
-# Mandala eyes: large, wide apart, unframed.
-mandala_eye(17, 29)
+# Mandala eyes, right under the brow.
+mandala_eye(21, 27)
 
 # Nose: wide, wedged between the eyes, with black nostrils.
-paint(rect(27, 31, 31, 38), outline=2, band=1)
+paint(rect(27, 31, 31, 37), outline=2, band=1)
 for y in (34, 35):
     for x in (29, 30):
         grid[y][x] = "."
 
 # Mouth: closed, a straight thick scarlet line just under the nose.
-for x in range(12, HALF):
-    grid[40][x] = "."
-    grid[41][x] = "R"
-    grid[42][x] = "R"
+for x in range(16, HALF):
+    grid[38][x] = "."
+    grid[39][x] = "R"
+    grid[40][x] = "R"
 
 # Beard: curls under the chin, paired into opposing scrolls by the mirror.
-curl(23, 46, 11, outline=2)
+curl(23, 42, 11, outline=2)
 
 rows = ["".join(r[:HALF]) + "".join(r[:HALF])[::-1] for r in grid]
 
