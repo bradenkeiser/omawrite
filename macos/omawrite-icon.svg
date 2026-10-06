@@ -5,6 +5,10 @@
       <stop offset="0.6" stop-color="#ff2400" stop-opacity="0.10"/>
       <stop offset="1" stop-color="#ff2400" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.75"/>
+    </linearGradient>
     <clipPath id="body"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
   </defs>
   <rect x="100" y="100" width="824" height="824" rx="185" fill="#000000"/>
@@ -376,36 +380,37 @@
 <circle cx="654" cy="440" r="20" fill="#ff2400"/>
 <circle cx="654" cy="440" r="8" fill="#000000"/>
 <path d="M654.0 406.0 L688.0 440.0 L654.0 474.0 L620.0 440.0 Z" fill="none" stroke="#ff2400" stroke-width="4" stroke-linecap="square" stroke-linejoin="miter"/>
-<ellipse cx="440" cy="560" rx="56" ry="50" fill="#000000" stroke="#ff2400" stroke-width="20"/>
-<ellipse cx="440" cy="560" rx="32" ry="27" fill="none" stroke="#39ff14" stroke-width="6"/>
-<ellipse cx="440" cy="528" rx="16" ry="8" fill="#ff2400"/>
-<ellipse cx="584" cy="560" rx="56" ry="50" fill="#000000" stroke="#ff2400" stroke-width="20"/>
-<ellipse cx="584" cy="560" rx="32" ry="27" fill="none" stroke="#39ff14" stroke-width="6"/>
-<ellipse cx="584" cy="528" rx="16" ry="8" fill="#ff2400"/>
-<path d="M266.0 552.0 L758.0 552.0 L780.0 574.0 L780.0 694.0 L758.0 716.0 L266.0 716.0 L244.0 694.0 L244.0 574.0 Z" fill="#000000" stroke="#ff2400" stroke-width="26" stroke-linejoin="miter"/>
-<path d="M278.4 582.0 L745.6 582.0 L750.0 586.4 L750.0 681.6 L745.6 686.0 L278.4 686.0 L274.0 681.6 L274.0 586.4 Z" fill="none" stroke="#39ff14" stroke-width="7" stroke-linejoin="miter"/>
-<path d="M276.0 634.0 L748.0 634.0" fill="none" stroke="#ff2400" stroke-width="12" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M292.0 624.0 L292.0 594.0 L320.0 594.0 L320.0 624.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M312.0 644.0 L312.0 674.0 L340.0 674.0 L340.0 644.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M332.0 624.0 L332.0 594.0 L360.0 594.0 L360.0 624.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M352.0 644.0 L352.0 674.0 L380.0 674.0 L380.0 644.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M372.0 624.0 L372.0 594.0 L400.0 594.0 L400.0 624.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M392.0 644.0 L392.0 674.0 L420.0 674.0 L420.0 644.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M412.0 624.0 L412.0 594.0 L440.0 594.0 L440.0 624.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M432.0 644.0 L432.0 674.0 L460.0 674.0 L460.0 644.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M452.0 624.0 L452.0 594.0 L480.0 594.0 L480.0 624.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M472.0 644.0 L472.0 674.0 L500.0 674.0 L500.0 644.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M492.0 624.0 L492.0 594.0 L520.0 594.0 L520.0 624.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M512.0 644.0 L512.0 674.0 L540.0 674.0 L540.0 644.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M532.0 624.0 L532.0 594.0 L560.0 594.0 L560.0 624.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M552.0 644.0 L552.0 674.0 L580.0 674.0 L580.0 644.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M572.0 624.0 L572.0 594.0 L600.0 594.0 L600.0 624.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M592.0 644.0 L592.0 674.0 L620.0 674.0 L620.0 644.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M612.0 624.0 L612.0 594.0 L640.0 594.0 L640.0 624.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M632.0 644.0 L632.0 674.0 L660.0 674.0 L660.0 644.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M652.0 624.0 L652.0 594.0 L680.0 594.0 L680.0 624.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M672.0 644.0 L672.0 674.0 L700.0 674.0 L700.0 644.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M692.0 624.0 L692.0 594.0 L720.0 594.0 L720.0 624.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
-<path d="M712.0 644.0 L712.0 674.0 L740.0 674.0 L740.0 644.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<rect x="250" y="424" width="524" height="70" fill="url(#shade)"/>
+<ellipse cx="440" cy="502" rx="56" ry="50" fill="#000000" stroke="#ff2400" stroke-width="20"/>
+<ellipse cx="440" cy="502" rx="32" ry="27" fill="none" stroke="#39ff14" stroke-width="6"/>
+<ellipse cx="440" cy="470" rx="16" ry="8" fill="#ff2400"/>
+<ellipse cx="584" cy="502" rx="56" ry="50" fill="#000000" stroke="#ff2400" stroke-width="20"/>
+<ellipse cx="584" cy="502" rx="32" ry="27" fill="none" stroke="#39ff14" stroke-width="6"/>
+<ellipse cx="584" cy="470" rx="16" ry="8" fill="#ff2400"/>
+<path d="M266.0 494.0 L758.0 494.0 L780.0 516.0 L780.0 694.0 L758.0 716.0 L266.0 716.0 L244.0 694.0 L244.0 516.0 Z" fill="#000000" stroke="#ff2400" stroke-width="26" stroke-linejoin="miter"/>
+<path d="M278.4 524.0 L745.6 524.0 L750.0 528.4 L750.0 681.6 L745.6 686.0 L278.4 686.0 L274.0 681.6 L274.0 528.4 Z" fill="none" stroke="#39ff14" stroke-width="7" stroke-linejoin="miter"/>
+<path d="M276.0 605.0 L748.0 605.0" fill="none" stroke="#ff2400" stroke-width="12" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M292.0 595.0 L292.0 553.0 L320.0 553.0 L320.0 595.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M312.0 615.0 L312.0 657.0 L340.0 657.0 L340.0 615.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M332.0 595.0 L332.0 553.0 L360.0 553.0 L360.0 595.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M352.0 615.0 L352.0 657.0 L380.0 657.0 L380.0 615.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M372.0 595.0 L372.0 553.0 L400.0 553.0 L400.0 595.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M392.0 615.0 L392.0 657.0 L420.0 657.0 L420.0 615.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M412.0 595.0 L412.0 553.0 L440.0 553.0 L440.0 595.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M432.0 615.0 L432.0 657.0 L460.0 657.0 L460.0 615.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M452.0 595.0 L452.0 553.0 L480.0 553.0 L480.0 595.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M472.0 615.0 L472.0 657.0 L500.0 657.0 L500.0 615.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M492.0 595.0 L492.0 553.0 L520.0 553.0 L520.0 595.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M512.0 615.0 L512.0 657.0 L540.0 657.0 L540.0 615.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M532.0 595.0 L532.0 553.0 L560.0 553.0 L560.0 595.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M552.0 615.0 L552.0 657.0 L580.0 657.0 L580.0 615.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M572.0 595.0 L572.0 553.0 L600.0 553.0 L600.0 595.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M592.0 615.0 L592.0 657.0 L620.0 657.0 L620.0 615.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M612.0 595.0 L612.0 553.0 L640.0 553.0 L640.0 595.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M632.0 615.0 L632.0 657.0 L660.0 657.0 L660.0 615.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M652.0 595.0 L652.0 553.0 L680.0 553.0 L680.0 595.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M672.0 615.0 L672.0 657.0 L700.0 657.0 L700.0 615.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M692.0 595.0 L692.0 553.0 L720.0 553.0 L720.0 595.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
+<path d="M712.0 615.0 L712.0 657.0 L740.0 657.0 L740.0 615.0" fill="none" stroke="#39ff14" stroke-width="5" stroke-linecap="square" stroke-linejoin="miter"/>
   </g>
 </svg>

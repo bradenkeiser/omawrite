@@ -209,24 +209,28 @@ def mandala(cx, cy, r=90):
 mandala(370, 440)
 mandala(mx(370), 440)
 
+# --- the muzzle stands in front of the eyes: a cast shadow gives depth ----
+MUZZLE_TOP = 494  # covers the lower fifth of the eyes
+OUT.append(f'<rect x="250" y="{MUZZLE_TOP - 70}" width="524" height="70" fill="url(#shade)"/>')
+
 # --- nostrils: thick bumps peeking over the muzzle -----------------------------
 for x in (440, mx(440)):
-    OUT.append(f'<ellipse cx="{x}" cy="{560}" rx="56" ry="50" fill="{BLACK}" stroke="{RED}" '
-               f'stroke-width="20"/>')
-    OUT.append(f'<ellipse cx="{x}" cy="{560}" rx="32" ry="27" fill="none" stroke="{GREEN}" '
-               f'stroke-width="6"/>')
-    OUT.append(f'<ellipse cx="{x}" cy="{528}" rx="16" ry="8" fill="{RED}"/>')
+    OUT.append(f'<ellipse cx="{x}" cy="{MUZZLE_TOP + 8}" rx="56" ry="50" fill="{BLACK}" '
+               f'stroke="{RED}" stroke-width="20"/>')
+    OUT.append(f'<ellipse cx="{x}" cy="{MUZZLE_TOP + 8}" rx="32" ry="27" fill="none" '
+               f'stroke="{GREEN}" stroke-width="6"/>')
+    OUT.append(f'<ellipse cx="{x}" cy="{MUZZLE_TOP - 24}" rx="16" ry="8" fill="{RED}"/>')
 
 # --- muzzle: a beefy closed rectangle, wider than the jaw ----------------------
-muzzle = chamfer(244, 552, 780, 716, 22)
+muzzle = chamfer(244, MUZZLE_TOP, 780, 716, 22)
 part(muzzle, outline=26, gap=30)
-seam = 634
+seam = (MUZZLE_TOP + 716) // 2
 line([(276, seam), (748, seam)], RED, 12)
 for x in range(292, 732, 40):  # closed teeth, upper and lower rows
     if x + 28 > 732:
         break
-    line([(x, seam - 10), (x, seam - 40), (x + 28, seam - 40), (x + 28, seam - 10)], GREEN, 5)
-    line([(x + 20, seam + 10), (x + 20, seam + 40), (x + 48, seam + 40), (x + 48, seam + 10)],
+    line([(x, seam - 10), (x, seam - 52), (x + 28, seam - 52), (x + 28, seam - 10)], GREEN, 5)
+    line([(x + 20, seam + 10), (x + 20, seam + 52), (x + 48, seam + 52), (x + 48, seam + 10)],
          GREEN, 5)
 
 print(f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
@@ -236,6 +240,10 @@ print(f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
       <stop offset="0.6" stop-color="{RED}" stop-opacity="0.10"/>
       <stop offset="1" stop-color="{RED}" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="shade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#000000" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity="0.75"/>
+    </linearGradient>
     <clipPath id="body"><rect x="100" y="100" width="824" height="824" rx="185"/></clipPath>
   </defs>
   <rect x="100" y="100" width="824" height="824" rx="185" fill="{BLACK}"/>
