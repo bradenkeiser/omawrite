@@ -1,5 +1,6 @@
 """Generates omawrite-icon.svg: a front-facing guardian lion (shishi) face,
-thick and blocky, in a kaleidoscopic red and green burst.
+thick and blocky, red and green on black, with its neck, collar and bell
+running off the bottom of the icon.
 
     python3 macos/make_icon.py > macos/omawrite-icon.svg
 
@@ -53,15 +54,6 @@ def circle(x, y, r, fill, sw=8, both=True, stroke=INK, extra=""):
                    f'stroke="{stroke}" stroke-width="{sw}" {extra}/>')
 
 
-def star(cx, cy, points, r_out, r_in, rot=0.0):
-    pts = []
-    for i in range(points * 2):
-        r = r_out if i % 2 == 0 else r_in
-        a = math.pi * i / points + rot
-        pts.append((cx + math.cos(a) * r, cy + math.sin(a) * r))
-    return pts
-
-
 def spiral(cx, cy, r, turns, mirror_x=False):
     """An Archimedean spiral path, used for mane curls and cheek swirls."""
     pts = []
@@ -84,15 +76,6 @@ def curl(cx, cy, r, fill, ring, mirror_x=False):
 # --- background: a kaleidoscope burst -------------------------------------
 OUT.append('''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
   <defs>
-    <radialGradient id="bg" cx="0.5" cy="0.5" r="0.7">
-      <stop offset="0" stop-color="#1f3d2a"/>
-      <stop offset="0.55" stop-color="#0d1c14"/>
-      <stop offset="1" stop-color="#040806"/>
-    </radialGradient>
-    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
-      <stop offset="0" stop-color="#ffe08a" stop-opacity="0.55"/>
-      <stop offset="1" stop-color="#ffe08a" stop-opacity="0"/>
-    </radialGradient>
     <radialGradient id="iris" cx="0.5" cy="0.45" r="0.55">
       <stop offset="0" stop-color="#ffe08a"/>
       <stop offset="0.5" stop-color="#ffc23c"/>
@@ -102,30 +85,33 @@ OUT.append('''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
       <rect x="100" y="100" width="824" height="824" rx="185"/>
     </clipPath>
   </defs>
-  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#bg)"/>
-  <g clip-path="url(#body)">''')
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#000000"/>
+  <g clip-path="url(#body)">
+  <g transform="translate(512 -90) scale(1.12 1) translate(-512 0)">''')
 
-# Rays alternating red and green, fanned from the center.
-rays = 24
-for i in range(rays):
-    a0 = 2 * math.pi * i / rays
-    a1 = 2 * math.pi * (i + 1) / rays
-    pts = [(CX, CY), (CX + math.cos(a0) * 760, CY + math.sin(a0) * 760),
-           (CX + math.cos(a1) * 760, CY + math.sin(a1) * 760)]
-    color = RED[2] if i % 2 else GREEN[2]
-    OUT.append(f'<polygon points="{fmt(pts)}" fill="{color}" opacity="0.55"/>')
-
-# Nested stars, each turned half a point from the last.
-for k, (r_out, color) in enumerate([(470, GREEN[1]), (420, RED[1]), (372, GOLD[1]),
-                                    (338, GREEN[2]), (310, RED[2])]):
-    pts = star(CX, CY, 16, r_out, r_out * 0.8, rot=k * math.pi / 16)
-    OUT.append(f'<polygon points="{fmt(pts)}" fill="{color}" stroke="{INK}" '
-               f'stroke-width="6" stroke-linejoin="round"/>')
-# A dark halo so the mane reads against the burst.
-OUT.append(f'<circle cx="{CX}" cy="{CY}" r="318" fill="{INK}"/>')
-OUT.append(f'<circle cx="{CX}" cy="{CY}" r="306" fill="none" stroke="{GOLD[1]}" '
-           f'stroke-width="6" stroke-dasharray="1 16" stroke-linecap="round"/>')
-OUT.append(f'<circle cx="{CX}" cy="{CY}" r="300" fill="url(#glow)"/>')
+# --- neck: a thick column running off the bottom, with a collar and bell ----
+neck = [(512, 640), (650, 652), (708, 760), (742, 900), (770, 1120), (512, 1120)]
+OUT.append(f'<path d="M{fmt(neck + mirror(neck)[::-1][1:])}Z" fill="{RED[1]}" stroke="{INK}" '
+           f'stroke-width="14" stroke-linejoin="round"/>')
+# Scale bands down the neck.
+for y in (930, 990, 1050):
+    half = 228 + (y - 900) * 28 / 220  # stays inside the neck's flare
+    OUT.append(f'<path d="M{CX - half:.1f} {y} Q{CX} {y + 34} {CX + half:.1f} {y}" fill="none" '
+               f'stroke="{RED[2]}" stroke-width="12" stroke-linecap="round"/>')
+OUT.append(f'<path d="M{CX - 236} 868 Q{CX} 912 {CX + 236} 868 L{CX + 240} 908 '
+           f'Q{CX} 952 {CX - 240} 908 Z" fill="{GOLD[1]}" stroke="{INK}" stroke-width="11" '
+           f'stroke-linejoin="round"/>')
+for i in range(-4, 5):
+    x = CX + i * 48
+    y = 902 + 40 * (1 - (i / 5) ** 2) * 0.55
+    circle(x, y - 6, 9, GREEN[1], sw=5, both=False)
+# Ribbon tails and the bell.
+shape([(530, 930), (590, 1000), (566, 1030), (520, 990)], GREEN[1], sw=9)
+circle(CX, 952, 40, GOLD[1], sw=11, both=False)
+OUT.append(f'<path d="M{CX - 40} 952 H{CX + 40}" stroke="{INK}" stroke-width="7"/>')
+circle(CX, 970, 9, INK, sw=0, both=False)
+OUT.append(f'<path d="M{CX} 970 V990" stroke="{INK}" stroke-width="7" stroke-linecap="round"/>')
+circle(CX - 13, 937, 7, GOLD[0], sw=0, both=False)
 
 # --- mane: two rings of spiral curls ---------------------------------------
 for ring, (radius, count, size, offset) in enumerate([(262, 18, 50, 0.0), (218, 16, 42, 0.5)]):
@@ -217,11 +203,12 @@ shape([(572, 664), (590, 664), (582, 700)], "#fff6dc", sw=6)
 
 # Beard: a block of curls under the chin.
 for i, (dx, dy, r) in enumerate([(0, 772, 40), (-66, 754, 34), (66, 754, 34), (-34, 826, 32),
-                                 (34, 826, 32), (0, 872, 28)]):
+                                 (34, 826, 32)]):
     fill = GREEN[1] if i % 2 else GOLD[1]
     ring = GOLD[0] if i % 2 else RED[1]
     curl(CX + dx, dy, r, fill, ring, mirror_x=dx > 0)
 
+OUT.append('</g>')
 OUT.append('</g>')
 OUT.append('</svg>')
 print("\n".join(OUT))
